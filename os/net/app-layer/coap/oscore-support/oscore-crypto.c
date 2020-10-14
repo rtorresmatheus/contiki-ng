@@ -533,7 +533,8 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t buffer_len, size
 	printf("Scheduling deterministic sign in SW\n");
 	//printf("msg to sign len %d, buffer len %d\n", msg_len, buffer_len);
 	printf_hex(buffer, msg_len);
-	PT_SPAWN(&state->pt, &state->sign_deterministic_pt, ecc_sign_deterministic(state, private_key, message_hash, &ctx.uECC, signature));
+	printf("Sign SW\n");
+ 	PT_SPAWN(&state->pt, &state->sign_deterministic_pt, ecc_sign_deterministic(state, private_key, message_hash, &ctx.uECC, signature));
 
 	state->sig_len = ES256_SIGNATURE_LEN;
 
@@ -643,25 +644,22 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t buffer_len, size
 
 	state->ecc_sign_state.process = state->process;
 	state->ecc_sign_state.curve_info = &nist_p_256;
-
 	ec_uint8v_to_uint32v(state->ecc_sign_state.secret, private_key, ES256_PRIVATE_KEY_LEN);
 
 	crypto_fill_random((uint8_t *) state->ecc_sign_state.k_e, ES256_PRIVATE_KEY_LEN);
 
 	printf("SHA256 and random number generation successful. About to run HW signing...\n");
 	pka_enable();
+	printf("Sign HW\n");
 	PT_SPAWN(&state->pt, &state->ecc_sign_state.pt, ecc_dsa_sign(&state->ecc_sign_state));
 	pka_disable();
 
 	PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 
-	if (state->ecc_sign_state.result != PKA_STATUS_SUCCESS)
-	{
+	if (state->ecc_sign_state.result != PKA_STATUS_SUCCESS)	{
 		printf("Failed to sign message with %d\n", state->ecc_sign_state.result);
 		PT_EXIT(&state->pt);
-	}
-	else
-	{
+	} else {
 		printf("Message sign success!\n");
 	}
 	//Add signature to the message
@@ -669,12 +667,7 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t buffer_len, size
 	ec_uint32v_to_uint8v(signature + ES256_PRIVATE_KEY_LEN, state->ecc_sign_state.signature_s, ES256_PRIVATE_KEY_LEN);
 	state->sig_len = ES256_SIGNATURE_LEN;
 	
-	//self-check
-	/*printf("Performing sign self-check...\n");
-	static verify_state_t test;
-	test.process = state->process;
-	PT_SPAWN(&state->pt, &test.pt, ecc_verify(&test, public_key, buffer, msg_len + state->sig_len));
-	*/
+	PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 #endif /*CONTIKI_TARGET_ZOUL*/
 #endif /*OSCORE_WITH_HW_CRYPTO*/
 	PT_END(&state->pt);
@@ -689,6 +682,7 @@ PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *
 	PT_SEM_WAIT(&state->pt, &crypto_processor_mutex);
 	printf("Crypto processor available (verify)!\n");
 
+
 #endif
 	uint8_t message_hash[SHA256_DIGEST_LENGTH];
 
@@ -700,6 +694,7 @@ PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *
 	dtls_sha256_update(&msg_hash_ctx, buffer, buffer_len);
 	dtls_sha256_final(message_hash, &msg_hash_ctx);
 	printf("Spawning a sw verify process\n");
+	printf("Verify SW\n");
 	PT_SPAWN(&state->pt, &state->verify_sw_pt, ecc_verify_sw(state, public_key, message_hash, signature));
 
 #else //HW crypto
@@ -793,6 +788,12 @@ PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *
 
 #ifdef CONTIKI_TARGET_ZOUL
 	//extract signature from buffer
+	const uint8_t *sig_r = signature;//buffer + msg_len;
+	const uint8_t *sig_s = signature + ES256_PRIVATE_KEY_LEN;//buffer + msg_len + ES256_PRIVATE_KEY_LEN;
+	printf("Signature r\n");
+	kprintf_hex(sig_r, (uint8_t) (ES256_SIGNATURE_LEN / 2));
+	printf("Signature s\n");
+	kprintf_hex(sig_s, (uint8_t) (ES256_SIGNATURE_LEN / 2));
 	ec_uint8v_to_uint32v(state->ecc_verify_state.signature_r, sig_r, ES256_PRIVATE_KEY_LEN);
 	ec_uint8v_to_uint32v(state->ecc_verify_state.signature_s, sig_s, ES256_PRIVATE_KEY_LEN);
 	printf("Using sha256\n");
@@ -810,10 +811,13 @@ PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *
 
 	state->ecc_verify_state.process = state->process;
 	state->ecc_verify_state.curve_info = &nist_p_256;
+	ec_uint8v_to_uint32v(state->ecc_verify_state.public.x, public_key, 32);
+	ec_uint8v_to_uint32v(state->ecc_verify_state.public.y, &public_key[32], 32);
 
 	printf("SHA256 successful. Ready for the verification in HW...\n");
 
 	pka_enable();
+	printf("Verify HW\n");
 	PT_SPAWN(&state->pt, &state->ecc_verify_state.pt, ecc_dsa_verify(&state->ecc_verify_state));
 	pka_disable();
 

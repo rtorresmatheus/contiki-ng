@@ -108,34 +108,6 @@ kprintf_hex2(const uint8_t *data, unsigned int len)
   printf("\n");
 }
 /*---------------------------------------------------------------------------*/
-/*void
-coap_log_msg(coap_message_t *msg)
-{
-	LOG_INFO("Logging coap message\n");
-	LOG_INFO("MID:%u\n", msg->mid);
-	LOG_INFO("Payload len:%u\n", msg->payload_len);
-	const uint8_t *tmp_payload;
-	if (msg->payload_len > 0)
-	{
-	LOG_INFO("Trying to get payload\n");
-	coap_get_payload(msg, &tmp_payload);
-	kprintf_hex2(tmp_payload, msg->payload_len);
-	}
-	else 
-	{
-		LOG_INFO("No payload\n");
-	}
-	LOG_INFO("Printing token\n");
-	kprintf_hex2(msg->token, COAP_TOKEN_LEN);
-	const char *host;
-	coap_get_header_uri_host(msg, &host);
-	if (host != NULL)
-	{
-		LOG_INFO("Uri host:\n");
-		printf("%.*s \n", 4, host);
-	}
-}*/
-/*---------------------------------------------------------------------------*/
 void
 coap_endpoint_log(const coap_endpoint_t *ep)
 {
@@ -479,6 +451,9 @@ coap_sendto(const coap_endpoint_t *ep, const uint8_t *data, uint16_t length)
   LOG_INFO_COAP_EP(ep);
   LOG_INFO_("DEBUG  %u bytes\n", length);
   //printf_hex(data, length);
+  //printf("send to:\n");
+  //LOG_INFO_6ADDR(&ep->ipaddr);
+  //printf("\n");
   uip_udp_packet_sendto(udp_conn, data, length, &ep->ipaddr, ep->port);
   return length;
 }
