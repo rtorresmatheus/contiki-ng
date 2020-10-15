@@ -541,6 +541,8 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t buffer_len, size
 #else /* SW crypto is not used */
 #ifdef CONTIKI_TARGET_SIMPLELINK
 	printf("Target=SIMPLELINK: using SHA2\n");
+	/*printf("Content to hash:\n");
+	kprintf_hex(buffer, msg_len);*/
 	uint8_t sha_result = sha2_hash(buffer, msg_len, message_hash);
 	if (sha_result != SHA2_STATUS_SUCCESS)
 	{
@@ -560,21 +562,18 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t buffer_len, size
 						0xCA, 0xC8, 0x7F, 0x79, 0x52, 0x7E, 0x1A, 0x7A};
 	uint8_t i;
 	uint32_t d__[8], d__rev[8], e__[8], e__rev[8];
-	ec_uint8v_to_uint32v(d__, private_key, 32);
+	uint8_t tmp_d[32];
+	memcpy(tmp_d, private_key, 32);
+	ec_uint8v_to_uint32v(d__, tmp_d, 32);
 	ec_uint8v_to_uint32v(e__, message_hash, 32);
 	for (i = 0; i < 8; i++)
 	{
 		d__rev[8 - 1 - i] = d__[i];
 		e__rev[8 - 1 - i] = e__[i];
 	}	
-	ec_uint32v_to_uint8v(private_key, d__rev, 32);
+	ec_uint32v_to_uint8v(tmp_d, d__rev, 32);
 	ec_uint32v_to_uint8v(message_hash, e__rev, 32);
 
-/*	printf("Sign diag: printing d for Java client:\n");
-	kprintf_hex(private_key, 32);
-	printf("Sign diag: printing e for Java client:\n");
-	kprintf_hex(message_hash, 32);
-*/
 	CryptoKey myPrivateKey;
 	CryptoKey pmsnKey;
 	ECDSA_Handle ecdsaHandle;
@@ -590,7 +589,12 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t buffer_len, size
 		PT_EXIT(&state->pt);
 	}
 
-	CryptoKeyPlaintext_initKey(&myPrivateKey, private_key, ES256_PRIVATE_KEY_LEN);
+	printf("Sign diag: printing d for Java client:\n");
+	kprintf_hex(tmp_d, 32);
+	printf("Sign diag: printing e for Java client:\n");
+	kprintf_hex(message_hash, 32);
+
+	CryptoKeyPlaintext_initKey(&myPrivateKey, tmp_d, ES256_PRIVATE_KEY_LEN);
 	CryptoKeyPlaintext_initKey(&pmsnKey, k, sizeof(k));
 
 	ECDSA_OperationSign_init(&operationSign);
