@@ -76,6 +76,8 @@ void send_delayed_response_callback(void *data)
  if((trans = coap_get_transaction_by_mid(*mid_))) {
    LOG_DBG("Transaction found!!! Sending...\n");
    coap_send_transaction(trans);
+   ctimer_stop(&dr_timer);
+   printf("Ctimer stopped!\n");
  }
  else {
    LOG_DBG("No transaction found, no response will be sent...\n");
@@ -542,7 +544,7 @@ void
 coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
 {
       size_t msg_len = 0;
-      uint8_t tmp_time = random_rand() % 10; /*TODO some better way*/
+      uint8_t tmp_time = random_rand() % 5; /*TODO some better way*/
       coap_transaction_t *transaction = NULL;
       transaction = coap_get_transaction_by_mid(message->mid);
       if(transaction != NULL) {
