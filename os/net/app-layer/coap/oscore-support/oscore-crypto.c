@@ -98,15 +98,6 @@ PROCESS(verifier, "verifier");
 #endif /*WITH_GROUPCOM*/
 /*Utilities*/
 /*---------------------------------------------------------------------------*/
-void
-kprintf_hex(unsigned char *data, unsigned int len) {
-  unsigned int i = 0;
-  for(i = 0; i < len; i++) {
-    printf("%02x ", data[i]);
-  }
-  printf("\n");
-}
-/*---------------------------------------------------------------------------*/
 #ifdef OSCORE_WITH_HW_CRYPTO
 void
 reverse_endianness(uint8_t *a, unsigned int len) {

@@ -44,10 +44,8 @@
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
-#define PRINTF_HEX(data, len)   oscoap_printf_hex(data, len)
 #else
 #define PRINTF(...)
-#define PRINTF_HEX(data, len)
 #endif
 
 
