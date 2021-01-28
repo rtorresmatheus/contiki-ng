@@ -44,6 +44,8 @@ endif
 ifeq ($(MAKE_WITH_GROUPCOM),1)
   CFLAGS += -DWITH_GROUPCOM=1
  
+ifeq ($(MAKE_WITH_OSCORE),1)
+  #only configure crypto when OSCORE is also used
   CFLAGS += -DSW_ECDSA=1
   
   #HW/SW Crypto configurations for Simpleink 
@@ -88,5 +90,5 @@ ifeq ($(MAKE_WITH_GROUPCOM),1)
     CFLAGS += -DuECC_PLATFORM=uECC_x86_64
     CFLAGS += -DuECC_CURVE=uECC_secp256r1
   endif
-
+endif #MAKE_WITH_OSCORE
 endif

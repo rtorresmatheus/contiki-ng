@@ -63,6 +63,7 @@
 /*Leisure time*/
 #include "sys/node-id.h"
 #include "sys/ctimer.h"
+
 static uint16_t dr_mid;
 static struct ctimer dr_timer;
 
@@ -170,7 +171,7 @@ extern coap_resource_t res_well_known_core;
 /*---------------------------------------------------------------------------*/
 /*- Internal API ------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-#ifdef WITH_GROUPCOM
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
 /*Only capture the data and start the signature verification*/
 coap_status_t coap_receive(uint8_t *payload, uint16_t payload_length, coap_message_t *message)
 {
@@ -186,11 +187,11 @@ coap_receive_cont(const coap_endpoint_t *src,
 int
 coap_receive(const coap_endpoint_t *src,
 		uint8_t *payload, uint16_t payload_length, uint8_t is_mcast)
-#endif
+#endif /*WITH_GROUPCOM*/
 {
   /* static declaration reduces stack peaks and program code size */
   static coap_message_t message[1]; /* this way the message can be treated as pointer as usual */
-#ifdef WITH_GROUPCOM
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
   message[0] = *msg;
 #else
   static coap_message_t response[1];
@@ -201,7 +202,7 @@ coap_receive(const coap_endpoint_t *src,
   uint8_t is_testmcast = 0;
   uint8_t is_testmcastq = 0;
   const char *res1 = "test/mcast", *res2 = "test/mcastq";
-#ifdef WITH_GROUPCOM
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
   coap_status_code = in_status;
 #else
   coap_status_code = coap_parse_message(message, payload, payload_length);
@@ -389,7 +390,7 @@ coap_receive(const coap_endpoint_t *src,
             /* serialize response */
         }
           if(coap_status_code == NO_ERROR) {
-#ifdef WITH_GROUPCOM
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
 		/*start the signing process and return.*/
 		size_t prepare_out = oscore_prepare_message(response, transaction->message);
 		if(prepare_out == PACKET_SERIALIZATION_ERROR) {
@@ -529,7 +530,7 @@ coap_receive(const coap_endpoint_t *src,
   return coap_status_code;
 }
 /*---------------------------------------------------------------------------*/
-#ifdef WITH_GROUPCOM
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
 /*Now that the signature process has yielded, the message is ready; just send it*/
 void
 coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
@@ -552,7 +553,7 @@ coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
 	      LOG_WARN("SEND POSTCRYPTO: transaction not found!\n");
       }
 }
-#endif
+#endif /* WITH_GROUPCOM */
 /*---------------------------------------------------------------------------*/
 void
 coap_engine_init(void)
