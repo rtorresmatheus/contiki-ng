@@ -204,9 +204,6 @@ coap_receive(const coap_endpoint_t *src,
   const char *res1 = "test/mcast", *res2 = "test/mcastq";
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
   coap_status_code = in_status;
-#else
-  coap_status_code = coap_parse_message(message, payload, payload_length);
-#endif /*WITH_GROUPCOM*/
 #ifdef OSCORE_WITH_HW_CRYPTO
 #ifdef CONTIKI_TARGET_ZOUL
   if(verify_res != 0) {
@@ -215,6 +212,9 @@ coap_receive(const coap_endpoint_t *src,
   }
 #endif /*CONTIKI_TARGET_ZOUL*/
 #endif /*OSCORE_WITH_HW_CRYPTO*/
+#else
+  coap_status_code = coap_parse_message(message, payload, payload_length);
+#endif /*WITH_GROUPCOM*/
   coap_set_src_endpoint(message, src);
 
   if(coap_status_code == NO_ERROR) {
