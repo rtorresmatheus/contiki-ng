@@ -90,10 +90,6 @@ PROCESS(coap_engine, "CoAP Engine");
 
 static struct uip_udp_conn *udp_conn = NULL;
 #ifdef WITH_GROUPCOM
-static coap_message_t request[1]; /*TODO enable multiple message processing*/
-static coap_message_t response[1];
-static coap_status_t parse_status; /*TODO enable multiple message processing*/
-static uint8_t *verify_result;
 static uint8_t is_mcast = 0;
 /*TODO change checking srcaddr into checking the dst group addr.*/
 #define is_addr_mcast_group(a)		\
@@ -107,6 +103,12 @@ static uint8_t is_mcast = 0;
    (((a)->u16[6]) == 0) &&              \
    (((a)->u8[14]) == 0) &&              \
    (((a)->u8[15]) == 0x01))
+#ifdef WITH_OSCORE
+static coap_message_t request[1]; /*TODO enable multiple message processing*/
+static coap_message_t response[1];
+static coap_status_t parse_status; /*TODO enable multiple message processing*/
+static uint8_t *verify_result;
+#endif /*WITH_OSCORE*/
 #endif /*WITH_GROUPCOM*/
 /*---------------------------------------------------------------------------*/
 void
@@ -385,12 +387,16 @@ process_data(void)
 #ifdef WITH_GROUPCOM
   is_mcast = is_addr_mcast_group(&UIP_IP_BUF->srcipaddr);
   LOG_INFO("is_mcast: %d\n", is_mcast);
+#ifdef WITH_OSCORE
   parse_status = coap_receive(uip_appdata, uip_datalen(), request);
-#else
+#else //no OSCORE, but GROUPCOM
+  coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), is_mcast);
+#endif /*WITH_OSCORE*/
+#else //not OSCORE, not GROUPCOM
   coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), 0);
 #endif /*WITH_GROUCPOM*/
 }
-#ifdef WITH_GROUPCOM
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
 /*---------------------------------------------------------------------------*/
 static void
 process_data_cont(uint8_t verify_res)
@@ -406,7 +412,7 @@ schedule_send_response(void)
 	coap_send_postcrypto(request, response);
 }
 /*---------------------------------------------------------------------------*/
-#endif
+#endif /*WITH_GROUPCOM*/
 int
 coap_sendto(const coap_endpoint_t *ep, const uint8_t *data, uint16_t length)
 {
@@ -483,7 +489,7 @@ PROCESS_THREAD(coap_engine, ev, data)
         process_data();
       }
     }
-#ifdef WITH_GROUPCOM
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
     else if(ev == pe_message_verified) {
 	    verify_result = (uint8_t *) data;
 	    LOG_INFO("Received message verified event! Verify result: %d\n", *verify_result);

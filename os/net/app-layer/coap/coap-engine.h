@@ -50,7 +50,7 @@ typedef struct coap_periodic_resource_s coap_periodic_resource_t;
 #include "coap.h"
 #include "coap-timer.h"
 
-#ifdef WITH_GROUPCOM
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
 #include "oscore-crypto.h"
 #endif /* WITH_GROUPCOM */
 
@@ -80,8 +80,7 @@ void coap_remove_handler(coap_handler_t *handler);
 
 void coap_engine_init(void);
 
-#ifdef WITH_GROUPCOM
-
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
 coap_status_t coap_receive(uint8_t *payload, uint16_t payload_length, coap_message_t *message);
 int coap_receive_cont(const coap_endpoint_t *src,
              uint8_t *payload, uint16_t payload_length, uint8_t is_mcast, uint8_t verify_res, coap_status_t in_status, coap_message_t *msg, coap_message_t *resp);

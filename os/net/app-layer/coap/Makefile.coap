@@ -10,6 +10,32 @@ ifeq ($(MAKE_WITH_OSCORE),1)
  CFLAGS += -DWITH_OSCORE=1
  MODULES += os/net/app-layer/coap/oscore-support
 
+  #HW/SW Crypto configurations for Simpleink 
+  ifeq ($(TARGET), simplelink)
+  ifeq ($(MAKE_WITH_HW_CRYPTO),1)
+    CFLAGS += -DOSCORE_WITH_HW_CRYPTO=1
+    MODULES += arch/cpu/simplelink-cc13xx-cc26xx/lib/coresdk_cc13xx_cc26xx/source/ti/devices/cc13x2_cc26x2/
+    MODULES += arch/cpu/simplelink-cc13xx-cc26xx/lib/coresdk_cc13xx_cc26xx/source
+  else  #With SW Crypto
+    #Use software AES-CCM implementation.
+    CFLAGS += -DCCM_STAR_CONF=ccm_star_driver
+    
+  endif #MAKE_WITH_HW_CRYPTO
+  endif #Simpleink
+ 
+  #HW/SW Crypto configurations for Zoul 
+  ifeq ($(TARGET), zoul)
+  ifeq ($(MAKE_WITH_HW_CRYPTO),1)
+    CFLAGS += -DOSCORE_WITH_HW_CRYPTO=1
+    #Force Zoul to use HW crypto
+    CFLAGS += -DCCM_STAR_CONF=cc2538_ccm_star_driver
+  else  #With SW Crypto
+    #Force Zoul to use SW crypto
+    CFLAGS += -DCCM_STAR_CONF=ccm_star_driver
+    
+  endif #MAKE_WITH_HW_CRYPTO
+  endif #Zoul
+
 else ifeq ($(MAKE_WITH_DTLS),1)
 
  TINYDTLS_PATH := os/net/security/tinydtls
@@ -44,6 +70,8 @@ endif
 ifeq ($(MAKE_WITH_GROUPCOM),1)
   CFLAGS += -DWITH_GROUPCOM=1
  
+ifeq ($(MAKE_WITH_OSCORE),1)
+  #only configure crypto when OSCORE is also used
   CFLAGS += -DSW_ECDSA=1
   
   #HW/SW Crypto configurations for Simpleink 
@@ -88,5 +116,5 @@ ifeq ($(MAKE_WITH_GROUPCOM),1)
     CFLAGS += -DuECC_PLATFORM=uECC_x86_64
     CFLAGS += -DuECC_CURVE=uECC_secp256r1
   endif
-
+endif #MAKE_WITH_OSCORE
 endif
