@@ -198,9 +198,8 @@ coap_receive(const coap_endpoint_t *src,
 #endif /*WITH_GROUPCOM*/
   coap_transaction_t *transaction = NULL;
   coap_handler_status_t status;
-  uint8_t is_testmcast = 0;
-  uint8_t is_testmcastq = 0;
-  const char *res1 = "test/mcast", *res2 = "test/mcastq";
+  uint8_t is_multicast = 0;
+  const char *multicast_path = "mc/";
 #ifdef WITH_GROUPCOM
   coap_status_code = in_status;
 #else
@@ -231,18 +230,17 @@ coap_receive(const coap_endpoint_t *src,
   {
   
     /*The flags to check if a multicast resource is requested*/
-    is_testmcast = (strncmp(message->uri_path, res1, strlen(res1)) == 0 && !strchr(message->uri_path, 'q'));
-    is_testmcastq = (strncmp(message->uri_path, res2, strlen(res2)) == 0);
+    is_multicast = (strncmp(message->uri_path, multicast_path, strlen(multicast_path)) == 0 );
 
     /*If requesting an unicast resource with a multicast address, or vice versa, ignore*/
     if(is_mcast) {
-     LOG_DBG("Is test/mcast: %d, is test/mcastq: %d\n", is_testmcast, is_testmcastq);
-     if(!is_testmcast && !is_testmcastq) {
+     LOG_DBG("Is mc/*: %d\n",is_multicast);
+     if(!is_multicast) {
        LOG_DBG("\nCannot request unicast resouces with multicast address! Ignoring...\n");
        return 0;
      }
     } else {
-     if(is_testmcast || is_testmcastq) {
+     if(is_multicast) {
        LOG_DBG("\nCannot request multicast resource with unicast address! Ignoring...\n");
        return 0;
      }
@@ -267,19 +265,19 @@ coap_receive(const coap_endpoint_t *src,
                             message->mid);
         } else {
 #ifdef WITH_GROUPCOM		
-	  if(is_testmcastq) {
-            LOG_DBG("\nGot a multicast request for a quiet resource (response suppression)...");
-	    status = call_service(message, response,
-                                transaction->message + COAP_MAX_HEADER_SIZE,
-                                block_size, &new_offset);
-	    return 0;
+	//  if(is_testmcastq) {
+         //   LOG_DBG("\nGot a multicast request for a quiet resource (response suppression)...");
+	//    status = call_service(message, response,
+          //                      transaction->message + COAP_MAX_HEADER_SIZE,
+       //                         block_size, &new_offset);
+	//    return 0;
 
-	  } else {
+	//  } else {
 	    LOG_DBG("\nA response will be sent...");  
           /* unreliable NON requests are answered with a NON as well */
             coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
                               coap_get_mid());
-	  }
+	//  }
 #endif /*WITH_GROUPCOM*/
           /* unreliable NON requests are answered with a NON as well */
             coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
@@ -457,10 +455,14 @@ coap_receive(const coap_endpoint_t *src,
 #ifdef WITH_GROUPCOM
       if(is_mcast) {
         /*Copy transport data to a timer data. The response will be sent at timer expiration.*/
-        uint8_t tmp_time = random_rand() % 10; /*TODO a better way*/
-        LOG_DBG("Scheduling delayed response after %d seconds...\n", tmp_time);
+#if COAP_GROUPCOM_DELAY == 0 
+      uint16_t delay_time = 0; 
+#else /* COAP_GROUPCOM_DELAY != 0 */
+      uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY_MILLIS * CLOCK_SECOND)); 
+#endif /* COAP_GROUPCOM_DELAY */
+        LOG_DBG("Scheduling delayed response after %d seconds...\n", delay_time);
         dr_mid = message->mid;
-	ctimer_set(&dr_timer, CLOCK_SECOND * tmp_time, send_delayed_response_callback, &dr_mid);
+	ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);
       } else {
         LOG_DBG("No groupcom, running coap_send_transation...\n");    
         coap_send_transaction(transaction);
@@ -535,7 +537,12 @@ void
 coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
 {
       size_t msg_len = 0;
-      uint8_t tmp_time = random_rand() % 5; /*TODO some better way*/
+#if COAP_GROUPCOM_DELAY == 0 
+      uint16_t delay_time = 0; 
+#else /* COAP_GROUPCOM_DELAY != 0 */
+      uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY * CLOCK_SECOND)); 
+#endif /* COAP_GROUPCOM_DELAY */
+
       coap_transaction_t *transaction = NULL;
       transaction = coap_get_transaction_by_mid(message->mid);
       if(transaction != NULL) {
@@ -545,9 +552,9 @@ coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
 	      	      return;
 	      }
 	      transaction->message_len = msg_len;
-              LOG_DBG("Scheduling delayed response after %d seconds...\n", tmp_time);
+              LOG_DBG("Scheduling delayed response after %d seconds...\n", delay_time/CLOCK_SECOND);
               dr_mid = message->mid;
-	      ctimer_set(&dr_timer, CLOCK_SECOND * tmp_time, send_delayed_response_callback, &dr_mid);
+	      ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);
       } else {
 	      LOG_WARN("SEND POSTCRYPTO: transaction not found!\n");
       }
