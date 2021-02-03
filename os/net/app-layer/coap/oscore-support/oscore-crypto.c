@@ -327,6 +327,51 @@ decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
   return plaintext_len;
 }
 /*---------------------------------------------------------------------------*/
+
+
+void
+oscore_hmac_init(oscore_hmac_context_t *ctx, const unsigned char *key, size_t klen) {
+  int i;
+
+  assert(ctx);
+
+  memset(ctx, 0, sizeof(oscre_hmac_context_t));
+
+  if (klen > DTLS_HMAC_BLOCKSIZE) {
+//IF Zoul
+    dtls_hash_init(&ctx->data);
+    dtls_hash_update(&ctx->data, key, klen);
+    dtls_hash_finalize(ctx->pad, &ctx->data);
+//else simplelink
+//endif
+  } else
+    memcpy(ctx->pad, key, klen);
+
+  /* create ipad: */
+  for (i=0; i < DTLS_HMAC_BLOCKSIZE; ++i)
+    ctx->pad[i] ^= 0x36;
+
+//if zoul
+  dtls_hash_init(&ctx->data);
+  dtls_hmac_update(ctx, ctx->pad, DTLS_HMAC_BLOCKSIZE);
+//else simple
+
+//endif
+
+
+  /* create opad by xor-ing pad[i] with 0x36 ^ 0x5C: */
+  for (i=0; i < DTLS_HMAC_BLOCKSIZE; ++i)
+    ctx->pad[i] ^= 0x6A;
+}
+
+
+
+
+
+
+
+
+
 /* only works with key_len <= 64 bytes */
 void
 hmac_sha256(const uint8_t *key, uint8_t key_len, const uint8_t *data, uint8_t data_len, uint8_t *hmac)
@@ -335,6 +380,11 @@ hmac_sha256(const uint8_t *key, uint8_t key_len, const uint8_t *data, uint8_t da
   dtls_hmac_init(&ctx, key, key_len);
   dtls_hmac_update(&ctx, data, data_len);
   dtls_hmac_finalize(&ctx, hmac);
+  
+  oscore_hmac_context_t ctx;
+  oscore_hmac_init(&ctx, key, key_len);
+  oscore_hmac_update(&ctx, data, data_len);
+  oscore_hmac_finalize(&ctx, hmac);
 
 }
 /*---------------------------------------------------------------------------*/
