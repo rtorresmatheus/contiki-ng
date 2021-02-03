@@ -39,17 +39,18 @@
 
 
 #include "oscore-crypto.h"
-#include "ccm-star.h"
+//#include "ccm-star.h"
 #include <string.h>
 #include "cose.h"
 #include <stdio.h>
-#include "dtls-hmac.h"
+//#include "dtls-hmac.h"
 
 /* Log configuration */
 #include "coap-log.h"
 #define LOG_MODULE "coap-uip"
 #define LOG_LEVEL  LOG_LEVEL_COAP
 
+/*Settings for group OSCORE*/
 #ifdef WITH_GROUPCOM
 #include "sys/pt.h"
 #include "os/lib/queue.h"
@@ -86,6 +87,7 @@ static struct pt_sem crypto_processor_mutex;
 #else /*SW crypto*/
 #include "uECC.h"
 #include "lib/ccm-star.h"
+#include "dtls-hmac.h"
 
 #endif /*OSCORE_WITH_HW_CRYPTO*/
 
@@ -95,7 +97,7 @@ process_event_t pe_message_verified;
 
 PROCESS(signer, "signer");
 PROCESS(verifier, "verifier");
-#else /* not WITH_GROUPCOM */
+#else /* unicast OSCORE */
 
 /*SW/HW crypto libraries*/
 #ifdef OSCORE_WITH_HW_CRYPTO
@@ -105,6 +107,7 @@ static struct pt_sem crypto_processor_mutex;
 
 #ifdef CONTIKI_TARGET_ZOUL
 #include "dev/sha256.h"
+#include "dev/cc2538-ccm-star.h"
 #endif /*CONTIKI_TARGET_ZOUL*/
 
 #ifdef CONTIKI_TARGET_SIMPLELINK
@@ -119,6 +122,7 @@ static struct pt_sem crypto_processor_mutex;
 
 #else /*OSCORE_WITH_HW_CRYPTO*/
 #include "lib/ccm-star.h"
+#include "dtls-hmac.h"
 #endif /*OSCORE_WITH_HW_CRYPTO*/
 
 #endif /*WITH_GROUPCOM*/
@@ -326,6 +330,7 @@ decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
   }
   return plaintext_len;
 }
+//TODO add hardware HMAC here
 /*---------------------------------------------------------------------------*/
 /* only works with key_len <= 64 bytes */
 void
