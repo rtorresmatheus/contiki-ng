@@ -330,33 +330,54 @@ decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
   }
   return plaintext_len;
 }
-//TODO add hardware HMAC here
 /*---------------------------------------------------------------------------*/
-
 #define OSCORE_HMAC_BLOCKSIZE 64
 #define OSCORE_HMAC_DIGEST_SIZE 32
 typedef struct {
   unsigned char pad[OSCORE_HMAC_BLOCKSIZE]; /**< ipad and opad storage */
+#ifdef CONTIKI_TARGET_ZOUL
   sha256_state_t data; /**< context for hash function */
+#elif defined CONTIKI_TARGET_SIMPLELINK
+  SHA2_Handle data;
+  int_fast16_t res;
+#endif /*CONTIKI_TARGET_ZOUL*/
 } oscore_hmac_context_t;
 
 
 void
 oscore_hmac_update(oscore_hmac_context_t *ctx,
                  const unsigned char *input, size_t ilen) {
+#ifdef CONTIKI_TARGET_ZOUL
   sha256_process(&ctx->data, input, ilen);
+#elif defined CONTIKI_TARGET_SIMPLELINK
+  res = SHA2_addData(&ctx->data, input, ilen);
+  assert(res == SHA2_STATUS_SUCCESS);
+#endif /*CONTIKI_TARGET_ZOUL*/
 }
 
-void
+
 oscore_hmac_init(oscore_hmac_context_t *ctx, const unsigned char *key, size_t klen) {
   int i;
 
   memset(ctx, 0, sizeof(oscore_hmac_context_t));
 
   if (klen > OSCORE_HMAC_BLOCKSIZE) {
+#ifdef CONTIKI_TARGET_ZOUL
     sha256_init(&ctx->data);
     sha256_process(&ctx->data, key, klen);
     sha256_done(&ctx->data, ctx->pad);
+#elif defined CONTIKI_TARGET_SIMPLELINK
+  ctx->data = SHA2_open(0, NULL);
+  assert(ctx->data != NULL);
+  res = SHA2_setHashType(&ctx->data, SHA2_HASH_TYPE_256);
+  assert(res == SHA2_STATUS_SUCCESS);
+  res = SHA2_addData(&ctx->data, key, klen);
+  assert(res == SHA2_STATUS_SUCCESS);
+  res = SHA2_finalize(&ctx->data, ctx->pad);
+  assert(res == SHA2_STATUS_SUCCESS);
+  //FIXME Remove the line below if it works without it
+  SHA2_close(&ctx->data);
+#endif /*CONTIKI_TARGET_ZOUL*/
   } else
     memcpy(ctx->pad, key, klen);
 
@@ -364,7 +385,14 @@ oscore_hmac_init(oscore_hmac_context_t *ctx, const unsigned char *key, size_t kl
   for (i=0; i < DTLS_HMAC_BLOCKSIZE; ++i)
     ctx->pad[i] ^= 0x36;
 
+#ifdef CONTIKI_TARGET_ZOUL
   sha256_init(&ctx->data);
+#elif defined CONTIKI_TARGET_SIMPLELINK
+  ctx->data = SHA2_open(0, NULL);
+  assert(ctx->data != NULL);
+  res = SHA2_setHashType(&ctx->data, SHA2_HASH_TYPE_256);
+  assert(res == SHA2_STATUS_SUCCESS);
+#endif /*CONTIKI_TARGET_ZOUL*/
   oscore_hmac_update(ctx, ctx->pad, OSCORE_HMAC_BLOCKSIZE);
 
   /* create opad by xor-ing pad[i] with 0x36 ^ 0x5C: */
@@ -378,6 +406,7 @@ oscore_hmac_finalize(oscore_hmac_context_t *ctx, unsigned char *result) {
   uint8_t ret;
 
 
+#ifdef CONTIKI_TARGET_ZOUL
   sha256_done(&ctx->data, buf);
 
   sha256_init(&ctx->data);
@@ -390,6 +419,27 @@ oscore_hmac_finalize(oscore_hmac_context_t *ctx, unsigned char *result) {
   } else {
   	return 0;
   }
+#elif defined CONTIKI_TARGET_SIMPLELINK
+  res = SHA2_finalize(&ctx->data, buf);
+  assert(res == SHA2_STATUS_SUCCESS);
+  //FIXME
+  SHA2_close(&ctx->data);
+
+  ctx->data = SHA2_open(0, NULL);
+  assert(ctx->data != NULL);
+  res = SHA2_setHashType(&ctx->data, SHA2_HASH_TYPE_256);
+  assert(res == SHA2_STATUS_SUCCESS);
+  res = SHA2_addData(&ctx->data, ctx->pad, OSCORE_HMAC_BLOCKSIZE);
+  assert(res == SHA2_STATUS_SUCCESS);
+  res = SHA2_addData(&ctx->data, buf, OSCORE_HMAC_DIGEST_SIZE);
+  assert(res == SHA2_STATUS_SUCCESS);
+  res = SHA2_finalize(&ctx->data, result);
+  assert(res == SHA2_STATUS_SUCCESS);
+  //FIXME Remove the line below if it works without it
+  SHA2_close(&ctx->data);
+  return OSCORE_HMAC_DIGEST_SIZE;
+#endif /*CONTIKI_TARGET_ZOUL*/
+
 }
 
 
