@@ -121,7 +121,7 @@ typedef struct messages_to_sign_entry
 {
 	struct messages_to_sign_entry *next;
 	struct process *process;
-	uint8_t  message[250];
+	uint8_t  message[REST_MAX_CHUNK_SIZE];
 	uint16_t message_len;
 	uint8_t *private_key;
 	uint8_t *public_key;

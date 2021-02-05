@@ -59,7 +59,7 @@
 #endif /* TEST */
 
 
-#define STACK_CHECK_CONF_ENABLED 1 
+//#define STACK_CHECK_CONF_ENABLED 1 
 
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
 #define ROLL_TM_CONF_IMIN_1         64
@@ -77,14 +77,25 @@
 
 #define REST_MAX_CHUNK_SIZE 150
 
+/* For testing */
+#define LOG_LEVEL_APP LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_COAP LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_MAIN LOG_LEVEL_NONE
+/* For debug */
+/*
 #define LOG_LEVEL_APP LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_RPL LOG_LEVEL_DBG
-/*Below defines for code-size limitation*/
 #define LOG_CONF_LEVEL_MAIN LOG_LEVEL_INFO
+*/
+
 #define UIP_CONF_UDP_CONNS 2
 #define UIP_CONF_BUFFER_SIZE 300
 //with the above 3 it was still 256 bytes too much
 #define QUEUEBUF_CONF_NUM 4 //decreased from 8
+
+//#undef LPM_CONF_ENABLE
+//#define LPM_CONF_ENABLE 0
+
+#define ENERGEST_CONF_ON 1
 
 #endif /* PROJECT_CONF_H_ */

@@ -21,7 +21,7 @@ CFLAGS += -DTEST=$(TEST)
 endif
 
 MAKE_WITH_OSCORE = 1
-MAKE_WITH_HW_CRYPTO = 1
+MAKE_WITH_HW_CRYPTO = 0
 
 # Include CoAP resources
 MODULES_REL += ./resources

@@ -63,7 +63,7 @@
 #define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_SMRF
 #endif
 
-#define STACK_CHECK_CONF_ENABLED 1 
+//#define STACK_CHECK_CONF_ENABLED 1 
 
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
 #define ROLL_TM_CONF_IMIN_1         64
@@ -72,23 +72,38 @@
 
 /* Code/RAM footprint savings so that things will fit on our device */
 #ifndef NETSTACK_MAX_ROUTE_ENTRIES
-#define NETSTACK_MAX_ROUTE_ENTRIES  3 
+#define NETSTACK_MAX_ROUTE_ENTRIES  3
 #endif
 
 #ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
 #define NBR_TABLE_CONF_MAX_NEIGHBORS 3 
 #endif
 
-#define REST_MAX_CHUNK_SIZE 150
+#define REST_MAX_CHUNK_SIZE 200
 
+#define COAP_GROUPCOM_DELAY 0
+/*For testing*/
+/*
+#define LOG_LEVEL_APP LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_COAP LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_MAIN LOG_LEVEL_NONE
+*/
+/* For debug */
 #define LOG_LEVEL_APP LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_RPL LOG_LEVEL_DBG
-/*Below defines for code-size limitation*/
 #define LOG_CONF_LEVEL_MAIN LOG_LEVEL_INFO
-#define UIP_CONF_UDP_CONNS 2
-#define UIP_CONF_BUFFER_SIZE 300
+
+#define UIP_CONF_UDP_CONNS 3
+#define UIP_CONF_BUFFER_SIZE 500
 //with the above 3 it was still 256 bytes too much
-#define QUEUEBUF_CONF_NUM 4 //decreased from 8
+#define QUEUEBUF_CONF_NUM 3 //decreased from 8
+
+#undef LPM_CONF_ENABLE
+#define LPM_CONF_ENABLE 0
+
+#define ENERGEST_CONF_ON 1
+
+#define MSGS_TO_VERIFY_SIZE 1
+#define MSGS_TO_SIGN_SIZE 1
 
 #endif /* PROJECT_CONF_H_ */

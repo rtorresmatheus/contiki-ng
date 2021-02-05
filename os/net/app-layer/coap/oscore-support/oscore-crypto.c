@@ -332,16 +332,108 @@ decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
 }
 //TODO add hardware HMAC here
 /*---------------------------------------------------------------------------*/
+
+#define OSCORE_HMAC_BLOCKSIZE 64
+#define OSCORE_HMAC_DIGEST_SIZE 32
+typedef struct {
+  unsigned char pad[OSCORE_HMAC_BLOCKSIZE]; /**< ipad and opad storage */
+  sha256_state_t data; /**< context for hash function */
+} oscore_hmac_context_t;
+
+
+void
+oscore_hmac_update(oscore_hmac_context_t *ctx,
+                 const unsigned char *input, size_t ilen) {
+  sha256_process(&ctx->data, input, ilen);
+}
+
+void
+oscore_hmac_init(oscore_hmac_context_t *ctx, const unsigned char *key, size_t klen) {
+  int i;
+
+  memset(ctx, 0, sizeof(oscore_hmac_context_t));
+
+  if (klen > OSCORE_HMAC_BLOCKSIZE) {
+    sha256_init(&ctx->data);
+    sha256_process(&ctx->data, key, klen);
+    sha256_done(&ctx->data, ctx->pad);
+  } else
+    memcpy(ctx->pad, key, klen);
+
+  /* create ipad: */
+  for (i=0; i < DTLS_HMAC_BLOCKSIZE; ++i)
+    ctx->pad[i] ^= 0x36;
+
+  sha256_init(&ctx->data);
+  oscore_hmac_update(ctx, ctx->pad, OSCORE_HMAC_BLOCKSIZE);
+
+  /* create opad by xor-ing pad[i] with 0x36 ^ 0x5C: */
+  for (i=0; i < OSCORE_HMAC_BLOCKSIZE; ++i)
+    ctx->pad[i] ^= 0x6A;
+}
+
+int
+oscore_hmac_finalize(oscore_hmac_context_t *ctx, unsigned char *result) {
+  unsigned char buf[OSCORE_HMAC_DIGEST_SIZE];
+  uint8_t ret;
+
+
+  sha256_done(&ctx->data, buf);
+
+  sha256_init(&ctx->data);
+  sha256_process(&ctx->data, ctx->pad, OSCORE_HMAC_BLOCKSIZE);
+  sha256_process(&ctx->data, buf, OSCORE_HMAC_DIGEST_SIZE);
+
+  ret = sha256_done(&ctx->data, result);
+  if(ret == CRYPTO_SUCCESS) {
+	return OSCORE_HMAC_DIGEST_SIZE;
+  } else {
+  	return 0;
+  }
+}
+
+
+
 /* only works with key_len <= 64 bytes */
 void
 hmac_sha256(const uint8_t *key, uint8_t key_len, const uint8_t *data, uint8_t data_len, uint8_t *hmac)
 {
   dtls_hmac_context_t ctx;
+  
+  bool enabled = CRYPTO_IS_ENABLED();
+  if(!enabled) {
+    crypto_enable();
+  }
+  
+  uint8_t hmac2[32];
+  oscore_hmac_context_t ctx2;
+  oscore_hmac_init(&ctx2, key, key_len);
+  oscore_hmac_update(&ctx2, data, data_len);
+  oscore_hmac_finalize(&ctx2, hmac2);
+  
   dtls_hmac_init(&ctx, key, key_len);
   dtls_hmac_update(&ctx, data, data_len);
   dtls_hmac_finalize(&ctx, hmac);
+  
+  if(memcmp(hmac, hmac2, 32) != 0){
+	printf("error!\n");
+  	for(int i = 0; i < 32; i++){
+		printf("%02X ", hmac[i]);
+	}
+	printf("\n");
+  	for(int i = 0; i < 32; i++){
+		printf("%02X ", hmac2[i]);
+	}
+	printf("\n");
+  } else {
+	printf("HMAC SHA256 OK!\n");
+  } 
 
+  if(enabled) {
+    crypto_disable();
+  }
 }
+
 /*---------------------------------------------------------------------------*/
 int
 hkdf_extract( const uint8_t *salt, uint8_t salt_len, const uint8_t *ikm, uint8_t ikm_len, uint8_t *prk_buffer)

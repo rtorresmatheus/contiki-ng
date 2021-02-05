@@ -134,16 +134,17 @@ oscore_encode_option_value(uint8_t *option_buffer, cose_encrypt0_t *cose, uint8_
 #ifdef WITH_GROUPCOM
   //Always set the 4th LSB to 1 and set kid context = Gid. kid = rid.
   //TODO right now hardcoded to only respond the Java client!
+   
   uint8_t kid[1] = { 0x52 }; //values taken from Java client and group-oscore-server.c
   uint8_t gid[3] = { 0x44, 0x61, 0x6c };
   uint8_t gid_len = 3, kid_len = 1;
-  //add kid_context = group id
+  /*Add kid_context = group id */
   option_buffer[0] |= 0x10;
   option_buffer[offset] = gid_len; 
   offset++;
   memcpy(&(option_buffer[offset]), gid, gid_len);
   offset += gid_len;
-  //add kid
+  /* Add KID */
   option_buffer[0] |= 0x08;
   memcpy(&(option_buffer[offset]), kid, kid_len);
   offset += kid_len;
