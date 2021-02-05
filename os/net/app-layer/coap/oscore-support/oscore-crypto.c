@@ -355,7 +355,7 @@ oscore_hmac_update(oscore_hmac_context_t *ctx,
 #endif /*CONTIKI_TARGET_ZOUL*/
 }
 
-
+void
 oscore_hmac_init(oscore_hmac_context_t *ctx, const unsigned char *key, size_t klen) {
   int i;
 
