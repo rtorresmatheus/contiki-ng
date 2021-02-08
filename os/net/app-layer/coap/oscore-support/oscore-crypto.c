@@ -367,16 +367,16 @@ oscore_hmac_init(oscore_hmac_context_t *ctx, const unsigned char *key, size_t kl
     sha256_process(&ctx->data, key, klen);
     sha256_done(&ctx->data, ctx->pad);
 #elif defined CONTIKI_TARGET_SIMPLELINK
-  ctx->data = SHA2_open(0, NULL);
-  assert(ctx->data != NULL);
-  res = SHA2_setHashType(&ctx->data, SHA2_HASH_TYPE_256);
-  assert(res == SHA2_STATUS_SUCCESS);
-  res = SHA2_addData(&ctx->data, key, klen);
-  assert(res == SHA2_STATUS_SUCCESS);
-  res = SHA2_finalize(&ctx->data, ctx->pad);
-  assert(res == SHA2_STATUS_SUCCESS);
-  //FIXME Remove the line below if it works without it
-  SHA2_close(&ctx->data);
+    ctx->data = SHA2_open(0, NULL);
+    assert(ctx->data != NULL);
+    res = SHA2_setHashType(&ctx->data, SHA2_HASH_TYPE_256);
+    assert(res == SHA2_STATUS_SUCCESS);
+    res = SHA2_addData(&ctx->data, key, klen);
+    assert(res == SHA2_STATUS_SUCCESS);
+    res = SHA2_finalize(&ctx->data, ctx->pad);
+    assert(res == SHA2_STATUS_SUCCESS);
+    //FIXME Remove the line below if it works without it
+    SHA2_close(&ctx->data);
 #endif /*CONTIKI_TARGET_ZOUL*/
   } else
     memcpy(ctx->pad, key, klen);
