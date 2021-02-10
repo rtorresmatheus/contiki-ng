@@ -157,7 +157,6 @@ call_service(coap_message_t *request, coap_message_t *response,
   }
 
   coap_set_status_code(response, NOT_FOUND_4_04);
-
   return COAP_HANDLER_STATUS_CONTINUE;
 }
 
@@ -226,13 +225,13 @@ coap_receive(const coap_endpoint_t *src,
     LOG_DBG("  Payload: ");
     LOG_DBG_COAP_STRING((const char *)message->payload, message->payload_len);
     LOG_DBG_("\n");
-
+    LOG_DBG("  Payload length: %d\n", message->payload_len);
+   
 /*Server responses have NULL STR, so for client mcast check is not needed*/
   if(message->uri_path) {
   
     /*The flags to check if a multicast resource is requested*/
     is_multicast = (strncmp(message->uri_path, multicast_path, strlen(multicast_path)) == 0 );
-       LOG_DBG("MCAST CHECK\n");
 
     /*If requesting an unicast resource with a multicast address, or vice versa, ignore*/
     if(is_mcast && !is_multicast ) {
@@ -243,18 +242,16 @@ coap_receive(const coap_endpoint_t *src,
        return 0;
     }
   } else {
-	  LOG_DBG("\nA client receiving a response, no mcast check.\n");
+	  LOG_DBG("A client receiving a response, no mcast check.\n");
   }
   /* handle requests */
   if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
-printf("GET FETE GET\n");
       /* use transaction buffer for response to confirmable request */
       if((transaction = coap_new_transaction(message->mid, src))) {
         uint32_t block_num = 0;
         uint16_t block_size = COAP_MAX_BLOCK_SIZE;
         uint32_t block_offset = 0;
         int32_t new_offset = 0;
-printf("new transaction\n");
         /* prepare response */
         if(message->type == COAP_TYPE_CON) {
           /* reliable CON requests are answered with an ACK */
@@ -263,25 +260,24 @@ printf("new transaction\n");
         } else {
 #ifdef WITH_GROUPCOM		
 	//  if(is_testmcastq) {
-        printf("CALLING!\n"); 
-	LOG_DBG(" CALLING !");
-	status = call_service(message, response,
-                                transaction->message + COAP_MAX_HEADER_SIZE,
-                                block_size, &new_offset);
+//	LOG_DBG("Calling service.\n");
+//	printf("code %d\n", message->type);
+  //	status = call_service(message, response,
+ //                               transaction->message + COAP_MAX_HEADER_SIZE,
+ //                               block_size, &new_offset);
 	//    return 0;
-
+//	printf("status %d\n", status);
 	//  } else {
-	    LOG_DBG("\nA response will be sent...");  
+//	    LOG_DBG("A response will be sent.\n");  
           /* unreliable NON requests are answered with a NON as well */
           //maybe should be ack? 
-  	  coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
-                              coap_get_mid());
+//  	  coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
+//                              coap_get_mid());
 	//  }
 #endif /*WITH_GROUPCOM*/
           /* unreliable NON requests are answered with a NON as well */
             coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
                               coap_get_mid());
-
         }
 #ifdef WITH_OSCORE 
 	if(coap_is_option(message, COAP_OPTION_OSCORE)) {
@@ -312,7 +308,6 @@ printf("new transaction\n");
           status = COAP_HANDLER_STATUS_CONTINUE;
         } else {
           /* call CoAP framework and check if found and allowed */
-          printf("call 2\n");
 	  status = call_service(message, response,
                                 transaction->message + COAP_MAX_HEADER_SIZE,
                                 block_size, &new_offset);
@@ -456,11 +451,10 @@ printf("new transaction\n");
       if(is_mcast) {
         /*Copy transport data to a timer data. The response will be sent at timer expiration.*/
 #if COAP_GROUPCOM_DELAY == 0 
-      uint16_t delay_time = 3; //TEMP small delay 
+      uint16_t delay_time = 1; //TEMP small delay maybe 0 ticks wont work 
 #elif COAP_GROUPCOM_DELAY != 0
       uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY_MILLIS * CLOCK_SECOND)); 
 #endif /* COAP_GROUPCOM_DELAY */
-       printf("delay time %d\n", delay_time);
 	 LOG_DBG("Scheduling delayed response after %d ticks...\n", delay_time);
         dr_mid = message->mid;
 	ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);
@@ -539,7 +533,7 @@ coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
 {
       size_t msg_len = 0;
 #if COAP_GROUPCOM_DELAY == 0 
-      uint16_t delay_time = 3; 
+      uint16_t delay_time = 1; 
 #elif COAP_GROUPCOM_DELAY != 0 
       uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY * CLOCK_SECOND)); 
 #endif /* COAP_GROUPCOM_DELAY */
@@ -635,7 +629,6 @@ invoke_coap_resource_service(coap_message_t *request, coap_message_t *response,
 {
   uint8_t found = 0;
   uint8_t allowed = 1;
-
   coap_resource_t *resource = NULL;
   const char *url = NULL;
   int url_len, res_url_len;
@@ -653,7 +646,6 @@ invoke_coap_resource_service(coap_message_t *request, coap_message_t *response,
        && strncmp(resource->url, url, res_url_len) == 0) {
       coap_resource_flags_t method = coap_get_method_type(request);
       found = 1;
-
       LOG_INFO("/%s, method %u, resource->flags %u\n", resource->url,
                (uint16_t)method, resource->flags);
 

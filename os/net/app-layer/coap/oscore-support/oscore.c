@@ -395,7 +395,7 @@ oscore_populate_cose(coap_message_t *pkt, cose_encrypt0_t *cose, oscore_ctx_t *c
 /* Global buffers since oscore_prepare_message() return before message is sent. */
 #ifdef WITH_GROUPCOM
 uint8_t content_buffer[COAP_MAX_CHUNK_SIZE + COSE_algorithm_AES_CCM_16_64_128_TAG_LEN + ES256_SIGNATURE_LEN];
-uint8_t sign_encoded_buffer[100]; //TODO come up with a better way to size buffer
+uint8_t sign_encoded_buffer[COAP_MAX_CHUNK_SIZE + COSE_algorithm_AES_CCM_16_64_128_TAG_LEN + ES256_SIGNATURE_LEN]; //TODO come up with a better way to size buffer
 uint8_t option_value_buffer[15];
 #endif /* WITH_GROUPCOM */
 

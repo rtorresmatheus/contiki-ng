@@ -93,15 +93,15 @@
 #define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_MAIN LOG_LEVEL_INFO
 
-#define UIP_CONF_UDP_CONNS 3
+#define UIP_CONF_UDP_CONNS 4
 #define UIP_CONF_BUFFER_SIZE 500
 //with the above 3 it was still 256 bytes too much
-#define QUEUEBUF_CONF_NUM 3 //decreased from 8
+#define QUEUEBUF_CONF_NUM 4 //decreased from 8
 
 #undef LPM_CONF_ENABLE
 #define LPM_CONF_ENABLE 0
 
-#define ENERGEST_CONF_ON 1
+//#define ENERGEST_CONF_ON 1
 
 #define MSGS_TO_VERIFY_SIZE 1
 #define MSGS_TO_SIGN_SIZE 1

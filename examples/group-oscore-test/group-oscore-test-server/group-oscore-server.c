@@ -55,7 +55,7 @@ extern coap_resource_t
 #ifdef A
   ret_stat,
 #endif /* A */
-  ret_stat,
+  res_stat,
   res_post;
 
 
@@ -112,7 +112,7 @@ PROCESS_THREAD(er_example_server, ev, data)
   }
   oscore_add_group_keys(ctx, snd_public_key, snd_private_key, rcv_public_key, rcv_private_key, COSE_Algorithm_ES256, COSE_Elliptic_Curve_P256);  
   coap_activate_resource(&res_post, "mc/post");
-  coap_activate_resource(&res_post, "mc/stat");
+  coap_activate_resource(&res_stat, "mc/stat");
   
   //multicast initialisation stuff here
   //uip_ip6addr(addr, addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7)
