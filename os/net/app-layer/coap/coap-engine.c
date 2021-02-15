@@ -210,7 +210,7 @@ coap_receive(const coap_endpoint_t *src,
   }
 #endif /*CONTIKI_TARGET_ZOUL*/
 #endif /*OSCORE_WITH_HW_CRYPTO*/
-#else
+#else /*when not WITH_GROUPCOM */
   coap_status_code = coap_parse_message(message, payload, payload_length);
 #endif /*WITH_GROUPCOM*/
   coap_set_src_endpoint(message, src);
@@ -221,6 +221,13 @@ coap_receive(const coap_endpoint_t *src,
             message->type, message->token_len, message->code, message->mid);
     LOG_DBG("  URL:");
     LOG_DBG_COAP_STRING(message->uri_path, message->uri_path_len);
+//Fix the F**NG makefi§le.coap
+//print message->uri_path_len and uri_path 
+//   if message->uri is weird
+//    testa med native
+//    test with HW/SW crypto
+//    if it happens, does it happen again/always?
+//    look at memory overflow
     LOG_DBG_("\n");
     LOG_DBG("  Payload: ");
     LOG_DBG_COAP_STRING((const char *)message->payload, message->payload_len);
@@ -400,7 +407,8 @@ coap_receive(const coap_endpoint_t *src,
           }
       } else {
         coap_status_code = SERVICE_UNAVAILABLE_5_03;
-        coap_error_message = "NoFreeTraBuffer";
+     	printf("COAP_MAX_OPEN_TRANSACTIONS %d \n", COAP_MAX_OPEN_TRANSACTIONS); 
+	coap_error_message = "NoFreeTraBuffer";
       } /* if(transaction buffer) */
 
       /* handle responses */

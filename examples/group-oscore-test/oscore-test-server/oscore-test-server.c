@@ -61,7 +61,6 @@ uint8_t master_secret[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x0
 uint8_t salt[8] = {0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40};
 uint8_t sender_id[1] = { 0x52 };
 uint8_t receiver_id[1] = { 0x25 };
-uint8_t group_id[3] = { 0x44, 0x61, 0x6c };
 
 PROCESS(er_example_server, "Erbium Example Server");
 AUTOSTART_PROCESSES(&er_example_server);
@@ -77,7 +76,7 @@ PROCESS_THREAD(er_example_server, ev, data)
 
   /*Derive an OSCORE-Security-Context. */
   static oscore_ctx_t *context;
-  context = oscore_derive_ctx(master_secret, 16, salt, 8, 10, sender_id, 1, receiver_id, 1, group_id, 3, OSCORE_DEFAULT_REPLAY_WINDOW);
+  context = oscore_derive_ctx(master_secret, 16, salt, 8, 10, sender_id, 1, receiver_id, 1, NULL, 0, OSCORE_DEFAULT_REPLAY_WINDOW);
   if(!context){
         LOG_ERR("Could not create OSCORE Security Context!\n");
   }
@@ -89,7 +88,6 @@ PROCESS_THREAD(er_example_server, ev, data)
     LOG_ERR("CONTEXT NOT FOUND\n");
   }
   coap_activate_resource(&res_post, "test/post");
-  
   //multicast initialisation stuff here
   //uip_ip6addr(addr, addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7)
   /* Define application-specific events here. */

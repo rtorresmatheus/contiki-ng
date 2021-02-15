@@ -79,27 +79,27 @@
 #define NBR_TABLE_CONF_MAX_NEIGHBORS 3 
 #endif
 
-#define REST_MAX_CHUNK_SIZE 200
+#define REST_MAX_CHUNK_SIZE 250
 
 #define COAP_GROUPCOM_DELAY 0
 /*For testing*/
-/*
 #define LOG_LEVEL_APP LOG_LEVEL_NONE
 #define LOG_CONF_LEVEL_COAP LOG_LEVEL_NONE
 #define LOG_CONF_LEVEL_MAIN LOG_LEVEL_NONE
-*/
+
 /* For debug */
+/*
 #define LOG_LEVEL_APP LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_MAIN LOG_LEVEL_INFO
-
+*/
 #define UIP_CONF_UDP_CONNS 4
-#define UIP_CONF_BUFFER_SIZE 500
+#define UIP_CONF_BUFFER_SIZE 400
 //with the above 3 it was still 256 bytes too much
 #define QUEUEBUF_CONF_NUM 4 //decreased from 8
 
-#undef LPM_CONF_ENABLE
-#define LPM_CONF_ENABLE 0
+//#undef LPM_CONF_ENABLE
+//#define LPM_CONF_ENABLE 0
 
 //#define ENERGEST_CONF_ON 1
 

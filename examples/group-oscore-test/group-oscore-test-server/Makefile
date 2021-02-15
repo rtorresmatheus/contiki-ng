@@ -4,6 +4,10 @@ all: $(CONTIKI_PROJECT)
 # Do not try to build on Sky because of code size limitation
 PLATFORMS_EXCLUDE = sky z1
 
+MAKE_WITH_OSCORE = 1
+MAKE_WITH_GROUPCOM = 1
+MAKE_WITH_HW_CRYPTO = 1 
+
 # Include the CoAP implementation
 MODULES += os/net/app-layer/coap
 
@@ -24,9 +28,6 @@ ifdef $(TEST)
 CFLAGS += -DTEST=$(TEST)
 endif
 
-MAKE_WITH_OSCORE = 1
-MAKE_WITH_GROUPCOM = 1
-MAKE_WITH_HW_CRYPTO = 1 
 
 # Include CoAP resources
 MODULES_REL += ./resources

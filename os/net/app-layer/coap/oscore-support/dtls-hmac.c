@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef OSCORE_WITH_HW_CRYPTO
+
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
 #else
@@ -79,3 +81,5 @@ dtls_hmac_finalize(dtls_hmac_context_t *ctx, unsigned char *result) {
 
   return len;
 }
+
+#endif /* OSCORE_WITH_HW_CRYPTO != 1 */

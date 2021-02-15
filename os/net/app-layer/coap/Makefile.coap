@@ -3,35 +3,39 @@ MAKE_WITH_OSCORE ?= 0
 MAKE_WITH_GROUPCOM ?= 0
 MAKE_WITH_HW_CRYPTO ?= 0
 
-ifeq ($(MAKE_WITH_OSCORE),1)
- MODULES += os/net/security/tinydtls/sha2
- CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
+
+
+ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
  
  CFLAGS += -DWITH_OSCORE=1
  MODULES += os/net/app-layer/coap/oscore-support
 
   #HW/SW Crypto configurations for Simpleink 
   ifeq ($(TARGET), simplelink)
-  ifeq ($(MAKE_WITH_HW_CRYPTO),1)
+  ifeq ($(strip $(MAKE_WITH_HW_CRYPTO)),1)
     CFLAGS += -DOSCORE_WITH_HW_CRYPTO=1
     MODULES += arch/cpu/simplelink-cc13xx-cc26xx/lib/coresdk_cc13xx_cc26xx/source/ti/devices/cc13x2_cc26x2/
     MODULES += arch/cpu/simplelink-cc13xx-cc26xx/lib/coresdk_cc13xx_cc26xx/source
   else  #With SW Crypto
     #Use software AES-CCM implementation.
     CFLAGS += -DCCM_STAR_CONF=ccm_star_driver
+    MODULES += os/net/security/tinydtls/sha2
+    CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
     
   endif #MAKE_WITH_HW_CRYPTO
   endif #Simpleink
  
   #HW/SW Crypto configurations for Zoul 
   ifeq ($(TARGET), zoul)
-  ifeq ($(MAKE_WITH_HW_CRYPTO),1)
+  ifeq ($(strip $(MAKE_WITH_HW_CRYPTO)),1)
     CFLAGS += -DOSCORE_WITH_HW_CRYPTO=1
     #Force Zoul to use HW crypto
     CFLAGS += -DCCM_STAR_CONF=cc2538_ccm_star_driver
   else  #With SW Crypto
     #Force Zoul to use SW crypto
     CFLAGS += -DCCM_STAR_CONF=ccm_star_driver
+    MODULES += os/net/security/tinydtls/sha2
+    CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
     
   endif #MAKE_WITH_HW_CRYPTO
   endif #Zoul
@@ -67,16 +71,15 @@ else ifeq ($(MAKE_WITH_DTLS),1)
 endif 
 
 
-ifeq ($(MAKE_WITH_GROUPCOM),1)
+ifeq ($(strip $(MAKE_WITH_GROUPCOM)),1)
   CFLAGS += -DWITH_GROUPCOM=1
  
-ifeq ($(MAKE_WITH_OSCORE),1)
+ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
   #only configure crypto when OSCORE is also used
-  CFLAGS += -DSW_ECDSA=1
   
   #HW/SW Crypto configurations for Simpleink 
   ifeq ($(TARGET), simplelink)
-  ifeq ($(MAKE_WITH_HW_CRYPTO),1)
+  ifeq ($(strip $(MAKE_WITH_HW_CRYPTO)),1)
     CFLAGS += -DOSCORE_WITH_HW_CRYPTO=1
     MODULES += arch/cpu/simplelink-cc13xx-cc26xx/lib/coresdk_cc13xx_cc26xx/source/ti/devices/cc13x2_cc26x2/
     MODULES += arch/cpu/simplelink-cc13xx-cc26xx/lib/coresdk_cc13xx_cc26xx/source
@@ -84,6 +87,8 @@ ifeq ($(MAKE_WITH_OSCORE),1)
     #Use software AES-CCM implementation.
     CFLAGS += -DCCM_STAR_CONF=ccm_star_driver
     
+    MODULES += os/net/security/tinydtls/sha2
+    CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
     #uECC software configuration.
     MODULES += os/net/app-layer/coap/oscore-support/uecc 
     CFLAGS += -DWATCHDOG_CONF_ENABLE=0
@@ -91,10 +96,11 @@ ifeq ($(MAKE_WITH_OSCORE),1)
     CFLAGS += -DuECC_CURVE=uECC_secp256r1
   endif #MAKE_WITH_HW_CRYPTO
   endif #Simpleink
+
  
   #HW/SW Crypto configurations for Zoul 
   ifeq ($(TARGET), zoul)
-  ifeq ($(MAKE_WITH_HW_CRYPTO),1)
+  ifeq ($(strip $(MAKE_WITH_HW_CRYPTO)),1)
     CFLAGS += -DOSCORE_WITH_HW_CRYPTO=1
     #Force Zoul to use HW crypto
     CFLAGS += -DCCM_STAR_CONF=cc2538_ccm_star_driver
@@ -102,6 +108,8 @@ ifeq ($(MAKE_WITH_OSCORE),1)
     #Force Zoul to use SW crypto
     CFLAGS += -DCCM_STAR_CONF=ccm_star_driver
     
+    MODULES += os/net/security/tinydtls/sha2
+    CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
     #uECC software configuration.
     MODULES += os/net/app-layer/coap/oscore-support/uecc 
     CFLAGS += -DWATCHDOG_CONF_ENABLE=0
@@ -112,6 +120,9 @@ ifeq ($(MAKE_WITH_OSCORE),1)
 
   #SW Crypto configurations for Native 
   ifeq ($(TARGET), native)
+    MODULES += os/net/security/tinydtls/sha2
+    CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
+    
     MODULES += os/net/app-layer/coap/oscore-support/uecc 
     CFLAGS += -DuECC_PLATFORM=uECC_x86_64
     CFLAGS += -DuECC_CURVE=uECC_secp256r1

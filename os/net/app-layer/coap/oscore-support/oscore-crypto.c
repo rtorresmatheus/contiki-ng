@@ -43,10 +43,6 @@
 #include "cose.h"
 #include <stdio.h>
 
-//TODO remove
-#include "dtls-hmac.h"
-#include <assert.h>
-
 /* Log configuration */
 #include "coap-log.h"
 #define LOG_MODULE "coap-uip"
@@ -71,6 +67,7 @@ static struct pt_sem crypto_processor_mutex;
 #include "dev/ecc-algorithm.h"
 #include "dev/ecc-curve.h"
 #include "dev/sha256.h"
+#include "dev/cc2538-ccm-star.h"
 #endif /*CONTIKI_TARGET_ZOUL*/
 
 #ifdef CONTIKI_TARGET_SIMPLELINK
@@ -214,6 +211,16 @@ encrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
                   || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
     return -5;
   }
+  printf("encrypt key\n");
+  for( int i = 0; i < key_len; i++){
+	printf("%02X", key[i]);
+  }
+  printf("\n");
+  printf("encrypt nonce\n");
+  for( int i = 0; i < nonce_len; i++){
+	printf("%02X", nonce[i]);
+  }
+  printf("\n");
   
 #ifdef OSCORE_WITH_HW_CRYPTO
 #ifdef CONTIKI_TARGET_ZOUL
@@ -277,6 +284,18 @@ decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
                 || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
     return -5;
   }
+
+  printf("decrypt key\n");
+  for( int i = 0; i < key_len; i++){
+	printf("%02X", key[i]);
+  }
+  printf("\n");
+  printf("decrypt nonce\n");
+  for( int i = 0; i < nonce_len; i++){
+	printf("%02X", nonce[i]);
+  }
+  printf("\n");
+
   
   uint8_t tag_buffer[COSE_algorithm_AES_CCM_16_64_128_TAG_LEN];
   uint16_t plaintext_len = ciphertext_len - COSE_algorithm_AES_CCM_16_64_128_TAG_LEN;
@@ -339,7 +358,8 @@ decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
 #define OSCORE_HMAC_DIGEST_SIZE 32
 
 
-#ifdef CONTIKI_TARGET_ZOUL
+#ifdef OSCORE_WITH_HW_CRYPTO
+#ifdef CONTIKI_TARGET_ZOUL 
 typedef struct {
   unsigned char pad[OSCORE_HMAC_BLOCKSIZE]; /**< ipad and opad storage */
   sha256_state_t data; /**< context for hash function */
@@ -395,7 +415,8 @@ oscore_hmac_finalize(oscore_hmac_context_t *ctx, unsigned char *result) {
 
 }
 
-#endif /*CONTIKI_TARGET_ZOUL*/
+#endif /* CONTIKI_TARGET_ZOUL */
+#endif /* OSCORE_WITH_HW_CRYPTO */
 
 
 /* only works with key_len <= 64 bytes */
@@ -403,7 +424,7 @@ void
 hmac_sha256(const uint8_t *key, uint8_t key_len, const uint8_t *data, uint8_t data_len, uint8_t *hmac)
 {
 
-#ifdef OSCORE_WITH_HW_CRYPTO
+#if OSCORE_WITH_HW_CRYPTO == 1
 #ifdef CONTIKI_TARGET_ZOUL  
   bool enabled = CRYPTO_IS_ENABLED();
   if(!enabled) {
