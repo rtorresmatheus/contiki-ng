@@ -71,7 +71,7 @@ static struct pt_sem crypto_processor_mutex;
 #endif /*CONTIKI_TARGET_ZOUL*/
 
 #ifdef CONTIKI_TARGET_SIMPLELINK
-#include "ti/drivers/TRNG.h"
+//#include "ti/drivers/TRNG.h"
 #include "ti/drivers/SHA2.h"
 #include "ti/drivers/ECDSA.h"
 #include "ti/drivers/AESCCM.h"
@@ -211,16 +211,6 @@ encrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
                   || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
     return -5;
   }
-  printf("encrypt key\n");
-  for( int i = 0; i < key_len; i++){
-	printf("%02X", key[i]);
-  }
-  printf("\n");
-  printf("encrypt nonce\n");
-  for( int i = 0; i < nonce_len; i++){
-	printf("%02X", nonce[i]);
-  }
-  printf("\n");
   
 #ifdef OSCORE_WITH_HW_CRYPTO
 #ifdef CONTIKI_TARGET_ZOUL
@@ -284,18 +274,6 @@ decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
                 || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
     return -5;
   }
-
-  printf("decrypt key\n");
-  for( int i = 0; i < key_len; i++){
-	printf("%02X", key[i]);
-  }
-  printf("\n");
-  printf("decrypt nonce\n");
-  for( int i = 0; i < nonce_len; i++){
-	printf("%02X", nonce[i]);
-  }
-  printf("\n");
-
   
   uint8_t tag_buffer[COSE_algorithm_AES_CCM_16_64_128_TAG_LEN];
   uint16_t plaintext_len = ciphertext_len - COSE_algorithm_AES_CCM_16_64_128_TAG_LEN;
@@ -589,9 +567,9 @@ oscore_crypto_init(void)
 	pka_init();
 	pka_disable();
 #elif CONTIKI_TARGET_SIMPLELINK
-	TRNG_init();
-	TRNG_Params trng_params;
-	TRNG_Params_init(&trng_params);
+//	TRNG_init();
+//	TRNG_Params trng_params;
+//	TRNG_Params_init(&trng_params);
 	AESCCM_init();
 	AESCCM_Params aesccm_params;
 	AESCCM_Params_init(&aesccm_params);
@@ -780,12 +758,8 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t
 	uint8_t hash[SHA256_DIGEST_LENGTH];
 	uint8_t r[32] = {0};
 	uint8_t s[32] = {0};
-	/*uint8_t k[32] =  		       {0xAE, 0x50, 0xEE, 0xFA, 0x27, 0xB4, 0xDB, 0x14,
-						0x9F, 0xE1, 0xFB, 0x04, 0xF2, 0x4B, 0x50, 0x58,
-						0x91, 0xE3, 0xAC, 0x4D, 0x2A, 0x5D, 0x43, 0xAA,
-						0xCA, 0xC8, 0x7F, 0x79, 0x52, 0x7E, 0x1A, 0x7A};*/
 	uint8_t k[32] = {0}; /*The number will be created by TRNG*/
-	TRNG_Handle trngHandle;
+//	TRNG_Handle trngHandle;
 	CryptoKey myPrivateKey;
 	CryptoKey pmsnKey;
 	ECDSA_Handle ecdsaHandle;
@@ -795,28 +769,39 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t
 	sha_ret= sha2_hash((const uint8_t *) buffer, msg_len, message_hash);
 	if(sha_ret != SHA2_STATUS_SUCCESS) {
 		LOG_ERR("SHA2 failed! Code: %u", sha_ret);
+		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	}
 
-	trngHandle = TRNG_open(0, NULL);
+/*	trngHandle = TRNG_open(0, NULL);
 	if(!trngHandle) {
 		LOG_ERR("Failed to open TRNG handle!\n");
+		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	}
+*/
+  uint8_t pmsn[32] = {0xAE, 0x50, 0xEE, 0xFA, 0x27, 0xB4, 0xDB, 0x14,
+                                         0x9F, 0xE1, 0xFB, 0x04, 0xF2, 0x4B, 0x50, 0x58,
+                                         0x91, 0xE3, 0xAC, 0x4D, 0x2A, 0x5D, 0x43, 0xAA,
+                                         0xCA, 0xC8, 0x7F, 0x79, 0x52, 0x7E, 0x1A, 0x7A};
 
-	CryptoKeyPlaintext_initBlankKey(&pmsnKey, k, ECCParams_NISTP256.length);
-	trngResult = TRNG_generateEntropy(trngHandle, &pmsnKey);
 
-	if(trngResult != TRNG_STATUS_SUCCESS) {
+	CryptoKeyPlaintext_initKey(&pmsnKey, pmsn, sizeof(pmsn));
+//	CryptoKeyPlaintext_initBlankKey(&pmsnKey, k, ECCParams_NISTP256.length);
+//	trngResult = TRNG_generateEntropy(trngHandle, &pmsnKey);
+
+/*	if(trngResult != TRNG_STATUS_SUCCESS) {
 		LOG_ERR("TRNG failed with code: %d", trngResult);
+		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	}
 
 	TRNG_close(trngHandle);
-
+*/
 	ecdsaHandle = ECDSA_open(0, NULL);
 	if(!ecdsaHandle) {
 		LOG_ERR("\nFailed to open ecdsaHandle!!!!\n");
+		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	}
 	memcpy(priv_key, private_key, ES256_PRIVATE_KEY_LEN);
@@ -840,6 +825,8 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t
 
 	if(operationResult != ECDSA_STATUS_SUCCESS) {
 		LOG_ERR("Sign failed with the following code: %d", operationResult);
+		ECDSA_close(ecdsaHandle);
+		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	}
 	/*reverse all bytes of r and s*/
@@ -873,10 +860,9 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t
 	PT_SPAWN(&state->pt, &state->ecc_sign_state.pt, ecc_dsa_sign(&state->ecc_sign_state));
 	pka_disable();
 
-	PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
-
 	if(state->ecc_sign_state.result != PKA_STATUS_SUCCESS)	{
 		LOG_ERR("Failed to sign message with %d\n", state->ecc_sign_state.result);
+		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	} 
 	ec_uint32v_to_uint8v(signature, state->ecc_sign_state.point_r.x, ES256_PRIVATE_KEY_LEN);
@@ -918,6 +904,7 @@ PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *
 	sha_ret = sha2_hash(buffer, buffer_len, message_hash);
 	if(sha_ret != SHA2_STATUS_SUCCESS) {
 		LOG_ERR("Sha2 failed with the code: %u!\n", sha_ret);
+		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	}
 
@@ -925,6 +912,7 @@ PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *
 
 	if(!ecdsaHandle) {
 		LOG_ERR("Could not open ECDSA handle!\n");
+		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	}
 
@@ -954,16 +942,18 @@ PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *
 	operationVerify.s = sig_s;
 	operationResult = ECDSA_verify(ecdsaHandle, &operationVerify);
 
-	PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 
 	if(operationResult != ECDSA_STATUS_SUCCESS) {
 		LOG_ERR("Verify failed with the following code: %d\n", operationResult);
+		ECDSA_close(ecdsaHandle);
+		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	} else {
 		LOG_DBG("Verify in Simplelink HW succeded!\n");
 	}
 
 	ECDSA_close(ecdsaHandle);
+	PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 #endif /*CONTIKI_TARGET_SIMPLELINK*/
 #ifdef CONTIKI_TARGET_ZOUL
 	const uint8_t *sig_r = signature;

@@ -62,7 +62,7 @@ RESOURCE(res_post,
          res_post_put_handler,
          NULL);
 
-static uint8_t response_payload[256]; 
+static uint8_t response_payload[200]; 
 static void
 
 res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)

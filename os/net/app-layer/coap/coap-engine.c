@@ -214,20 +214,12 @@ coap_receive(const coap_endpoint_t *src,
   coap_status_code = coap_parse_message(message, payload, payload_length);
 #endif /*WITH_GROUPCOM*/
   coap_set_src_endpoint(message, src);
-
   if(coap_status_code == NO_ERROR) {
     /*TODO duplicates suppression, if required by application */
     LOG_DBG("  Parsed: v %u, t %u, tkl %u, c %u, mid %u\n", message->version,
             message->type, message->token_len, message->code, message->mid);
     LOG_DBG("  URL:");
     LOG_DBG_COAP_STRING(message->uri_path, message->uri_path_len);
-//Fix the F**NG makefi§le.coap
-//print message->uri_path_len and uri_path 
-//   if message->uri is weird
-//    testa med native
-//    test with HW/SW crypto
-//    if it happens, does it happen again/always?
-//    look at memory overflow
     LOG_DBG_("\n");
     LOG_DBG("  Payload: ");
     LOG_DBG_COAP_STRING((const char *)message->payload, message->payload_len);
@@ -242,8 +234,8 @@ coap_receive(const coap_endpoint_t *src,
 
     /*If requesting an unicast resource with a multicast address, or vice versa, ignore*/
     if(is_mcast && !is_multicast ) {
-       LOG_DBG("Cannot request unicast resouces with multicast address! Ignoring...\n");
-       return 0;
+      	LOG_DBG("Cannot request unicast resouces with multicast address! Ignoring...\n");
+	return 0;
     } else if(!is_mcast && is_multicast) {
        LOG_DBG("Cannot request multicast resource with unicast address! Ignoring...\n");
        return 0;
@@ -255,7 +247,7 @@ coap_receive(const coap_endpoint_t *src,
   if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
       /* use transaction buffer for response to confirmable request */
       if((transaction = coap_new_transaction(message->mid, src))) {
-        uint32_t block_num = 0;
+  	uint32_t block_num = 0;
         uint16_t block_size = COAP_MAX_BLOCK_SIZE;
         uint32_t block_offset = 0;
         int32_t new_offset = 0;
@@ -265,23 +257,6 @@ coap_receive(const coap_endpoint_t *src,
           coap_init_message(response, COAP_TYPE_ACK, CONTENT_2_05,
                             message->mid);
         } else {
-#ifdef WITH_GROUPCOM		
-	//  if(is_testmcastq) {
-//	LOG_DBG("Calling service.\n");
-//	printf("code %d\n", message->type);
-  //	status = call_service(message, response,
- //                               transaction->message + COAP_MAX_HEADER_SIZE,
- //                               block_size, &new_offset);
-	//    return 0;
-//	printf("status %d\n", status);
-	//  } else {
-//	    LOG_DBG("A response will be sent.\n");  
-          /* unreliable NON requests are answered with a NON as well */
-          //maybe should be ack? 
-//  	  coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
-//                              coap_get_mid());
-	//  }
-#endif /*WITH_GROUPCOM*/
           /* unreliable NON requests are answered with a NON as well */
             coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
                               coap_get_mid());
@@ -407,7 +382,6 @@ coap_receive(const coap_endpoint_t *src,
           }
       } else {
         coap_status_code = SERVICE_UNAVAILABLE_5_03;
-     	printf("COAP_MAX_OPEN_TRANSACTIONS %d \n", COAP_MAX_OPEN_TRANSACTIONS); 
 	coap_error_message = "NoFreeTraBuffer";
       } /* if(transaction buffer) */
 
@@ -549,14 +523,14 @@ coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
       coap_transaction_t *transaction = NULL;
       transaction = coap_get_transaction_by_mid(message->mid);
       if(transaction != NULL) {
-              msg_len = coap_serialize_postcrypto(response, transaction->message);
+	      msg_len = coap_serialize_postcrypto(response, transaction->message);
 	      if(msg_len == 0) {
 		      LOG_ERR("POSTCRYPTO serialization failed!\n");
 	      	      return;
 	      }
 	      transaction->message_len = msg_len;
               LOG_DBG("Scheduling delayed response after %d ticks...\n", delay_time);
-              dr_mid = message->mid;
+	      dr_mid = message->mid;
 	      ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);
       } else {
 	      LOG_WARN("SEND POSTCRYPTO: transaction not found!\n");

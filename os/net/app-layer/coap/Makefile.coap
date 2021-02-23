@@ -91,7 +91,6 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
     CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
     #uECC software configuration.
     MODULES += os/net/app-layer/coap/oscore-support/uecc 
-    CFLAGS += -DWATCHDOG_CONF_ENABLE=0
     CFLAGS += -DuECC_PLATFORM=uECC_arm
     CFLAGS += -DuECC_CURVE=uECC_secp256r1
   endif #MAKE_WITH_HW_CRYPTO
@@ -104,6 +103,7 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
     CFLAGS += -DOSCORE_WITH_HW_CRYPTO=1
     #Force Zoul to use HW crypto
     CFLAGS += -DCCM_STAR_CONF=cc2538_ccm_star_driver
+    CFLAGS += -DWATCHDOG_CONF_ENABLE=0
   else  #With SW Crypto
     #Force Zoul to use SW crypto
     CFLAGS += -DCCM_STAR_CONF=ccm_star_driver

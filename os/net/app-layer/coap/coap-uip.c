@@ -108,6 +108,9 @@ static coap_message_t request[1]; /*TODO enable multiple message processing*/
 static coap_message_t response[1];
 static coap_status_t parse_status; /*TODO enable multiple message processing*/
 static uint8_t *verify_result;
+static uint8_t buffer_flag = 0;
+static uint8_t group_oscore_message_buffer[REST_MAX_CHUNK_SIZE];
+static coap_endpoint_t group_oscore_source_endpoint;
 #endif /*WITH_OSCORE*/
 #endif /*WITH_GROUPCOM*/
 /*---------------------------------------------------------------------------*/
@@ -251,6 +254,15 @@ coap_endpoint_parse(const char *text, size_t size, coap_endpoint_t *ep)
   return 0;
 }
 /*---------------------------------------------------------------------------*/
+
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
+static const coap_endpoint_t *
+get_src_endpoint(uint8_t secure)
+{
+  return &group_oscore_source_endpoint;
+}
+
+#else 
 static const coap_endpoint_t *
 get_src_endpoint(uint8_t secure)
 {
@@ -260,6 +272,7 @@ get_src_endpoint(uint8_t secure)
   src.secure = secure;
   return &src;
 }
+#endif /*defied WITH_GROUPCOM && defined WITH_OSCORE */
 /*---------------------------------------------------------------------------*/
 int
 coap_endpoint_is_secure(const coap_endpoint_t *ep)
@@ -271,8 +284,6 @@ int
 coap_endpoint_is_connected(const coap_endpoint_t *ep)
 {
 #ifndef CONTIKI_TARGET_NATIVE
-  //printf("is link local %d\n", uip_is_addr_linklocal(&ep->ipaddr));
-  //printf("is reachable %d\n", NETSTACK_ROUTING.node_is_reachable());
   if(!uip_is_addr_linklocal(&ep->ipaddr)
     && NETSTACK_ROUTING.node_is_reachable() == 0) {
     return 0;
@@ -377,6 +388,7 @@ process_secure_data(void)
 }
 #endif /* WITH_DTLS */
 /*---------------------------------------------------------------------------*/
+
 static void
 process_data(void)
 {
@@ -388,7 +400,20 @@ process_data(void)
   is_mcast = is_addr_mcast_group(&UIP_IP_BUF->srcipaddr);
   LOG_INFO("is_mcast: %d\n", is_mcast);
 #ifdef WITH_OSCORE
-  parse_status = coap_receive(uip_appdata, uip_datalen(), request);
+  uint16_t uip_datalen = uip_datalen();
+  if( buffer_flag != 0){
+	LOG_ERR("BUFFER NOT FREE!\n");
+ 	return;
+  }
+  /* Save the Group-OSCORE message in the UIP-buffer */
+  memcpy(group_oscore_message_buffer, uip_appdata, uip_datalen);
+  /* Save the Source Endpoint of the Group-OSCORE message. */
+  uip_ipaddr_copy(&(group_oscore_source_endpoint.ipaddr), &UIP_IP_BUF->srcipaddr);
+  group_oscore_source_endpoint.port = UIP_UDP_BUF->srcport;
+  group_oscore_source_endpoint.secure = 0;
+
+  buffer_flag = 1;
+  parse_status = coap_receive(group_oscore_message_buffer, uip_datalen, request);
 #else //no OSCORE, but GROUPCOM
   coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), is_mcast);
 #endif /*WITH_OSCORE*/
@@ -456,7 +481,6 @@ coap_sendto(const coap_endpoint_t *ep, const uint8_t *data, uint16_t length)
 PROCESS_THREAD(coap_engine, ev, data)
 {
   PROCESS_BEGIN();
-
   /* new connection with remote host */
   udp_conn = udp_new(NULL, 0, NULL);
   udp_bind(udp_conn, SERVER_LISTEN_PORT);
@@ -486,7 +510,7 @@ PROCESS_THREAD(coap_engine, ev, data)
           continue;
         }
 #endif /* WITH_DTLS */
-        process_data();
+ 	process_data();
       }
     }
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
@@ -495,6 +519,7 @@ PROCESS_THREAD(coap_engine, ev, data)
 	    LOG_INFO("Received message verified event! Verify result: %d\n", *verify_result);
 	    process_data_cont(*verify_result);
 	    verify_result = NULL;
+	    buffer_flag = 0;
     } else if(ev == pe_message_signed) {
 	    LOG_INFO("Received message signed event!\n");
 	    schedule_send_response();
