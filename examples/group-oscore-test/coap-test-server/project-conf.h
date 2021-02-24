@@ -60,8 +60,7 @@
 
 /* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
 
-#define STACK_CHECK_CONF_ENABLED 1 
-
+#define STACK_CHECK_CONF_ENABLED 0 
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
 #define ROLL_TM_CONF_IMIN_1         64
 
@@ -69,23 +68,39 @@
 
 /* Code/RAM footprint savings so that things will fit on our device */
 #ifndef NETSTACK_MAX_ROUTE_ENTRIES
-#define NETSTACK_MAX_ROUTE_ENTRIES  3 
+#define NETSTACK_MAX_ROUTE_ENTRIES  3
 #endif
 
 #ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
 #define NBR_TABLE_CONF_MAX_NEIGHBORS 3 
 #endif
 
-#define REST_MAX_CHUNK_SIZE 150
+#define REST_MAX_CHUNK_SIZE 230
 
-#define LOG_LEVEL_APP LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_RPL LOG_LEVEL_DBG
-/*Below defines for code-size limitation*/
-#define LOG_CONF_LEVEL_MAIN LOG_LEVEL_INFO
-#define UIP_CONF_UDP_CONNS 2
-#define UIP_CONF_BUFFER_SIZE 300
-//with the above 3 it was still 256 bytes too much
+#define COAP_GROUPCOM_DELAY 0
+/*For testing*/
+#define LOG_LEVEL_APP LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_COAP LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_MAIN LOG_LEVEL_NONE
+/*
+*/
+/* For debug */
+/*
+#define LOG_LEVEL_APP           LOG_LEVEL_DBG
+#define LOG_LEVEL_APP           LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_DBG
+//#define LOG_CONF_LEVEL_RPL    LOG_LEVEL_DBG
+//#define LOG_CONF_LEVEL_6LOWPAN        LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_MAC      LOG_LEVEL_DBG
+*/
+
+#define UIP_CONF_UDP_CONNS 4
+#define UIP_CONF_BUFFER_SIZE 400
 #define QUEUEBUF_CONF_NUM 4 //decreased from 8
+
+
+//#define ENERGEST_CONF_ON 1
 
 #endif /* PROJECT_CONF_H_ */

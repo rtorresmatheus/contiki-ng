@@ -58,7 +58,6 @@
 
 #endif /* TEST */
 
-
 //#define STACK_CHECK_CONF_ENABLED 1 
 
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
@@ -68,35 +67,44 @@
 
 /* Code/RAM footprint savings so that things will fit on our device */
 #ifndef NETSTACK_MAX_ROUTE_ENTRIES
-#define NETSTACK_MAX_ROUTE_ENTRIES  3 
+#define NETSTACK_MAX_ROUTE_ENTRIES  3
 #endif
 
 #ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
 #define NBR_TABLE_CONF_MAX_NEIGHBORS 3 
 #endif
 
-#define REST_MAX_CHUNK_SIZE 150
+#define REST_MAX_CHUNK_SIZE 230
 
-/* For testing */
-/*
+#define COAP_GROUPCOM_DELAY 0
+/*For testing*/
 #define LOG_LEVEL_APP LOG_LEVEL_NONE
 #define LOG_CONF_LEVEL_COAP LOG_LEVEL_NONE
 #define LOG_CONF_LEVEL_MAIN LOG_LEVEL_NONE
+/*
 */
 /* For debug */
-#define LOG_LEVEL_APP LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_MAIN LOG_LEVEL_INFO
-
+/*
+#define LOG_LEVEL_APP           LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_COAP 	LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_RPL    LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_6LOWPAN        LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_MAC      LOG_LEVEL_DBG
+*/
+#define STACK_CHECK_CONF_ENABLED 0 
 
 #define UIP_CONF_UDP_CONNS 4
-#define UIP_CONF_BUFFER_SIZE 300
+#define UIP_CONF_BUFFER_SIZE 400
 //with the above 3 it was still 256 bytes too much
 #define QUEUEBUF_CONF_NUM 4 //decreased from 8
 
 //#undef LPM_CONF_ENABLE
 //#define LPM_CONF_ENABLE 0
 
-#define ENERGEST_CONF_ON 1
+//#define ENERGEST_CONF_ON 1
+
 
 #endif /* PROJECT_CONF_H_ */

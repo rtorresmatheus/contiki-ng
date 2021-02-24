@@ -65,7 +65,7 @@ PROCESS_THREAD(er_example_server, ev, data)
 
   PROCESS_PAUSE();
 
-  coap_activate_resource(&res_post, "test/post");
+  coap_activate_resource(&res_post, "uc/post");
   
   while(1) {
     PROCESS_WAIT_EVENT();

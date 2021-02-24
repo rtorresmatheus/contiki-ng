@@ -70,7 +70,7 @@ PROCESS_THREAD(er_example_server, ev, data)
 
   PROCESS_PAUSE();
 
-  LOG_INFO("Starting Group OSCORE Server\n");
+  LOG_INFO("Starting OSCORE Server\n");
 
   oscore_init_server();
 
@@ -87,9 +87,7 @@ PROCESS_THREAD(er_example_server, ev, data)
   if(ctx == NULL){
     LOG_ERR("CONTEXT NOT FOUND\n");
   }
-  coap_activate_resource(&res_post, "test/post");
-  //multicast initialisation stuff here
-  //uip_ip6addr(addr, addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7)
+  coap_activate_resource(&res_post, "uc/post");
   /* Define application-specific events here. */
   while(1) {
     PROCESS_WAIT_EVENT();

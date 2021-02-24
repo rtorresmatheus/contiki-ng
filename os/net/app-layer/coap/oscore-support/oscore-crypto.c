@@ -48,35 +48,18 @@
 #define LOG_MODULE "coap-uip"
 #define LOG_LEVEL  LOG_LEVEL_COAP
 
-/*Settings for group OSCORE*/
-#ifdef WITH_GROUPCOM
-#include "sys/pt.h"
-#include "os/lib/queue.h"
-#include "os/lib/memb.h"
-#include "random.h"
-
-
-/*SW/HW crypto libraries*/
-#ifdef OSCORE_WITH_HW_CRYPTO
-
-#include "sys/pt-sem.h"
-process_event_t pe_crypto_lock_released;
-static struct pt_sem crypto_processor_mutex;
+/*OSCORE SW/HW crypto libraries*/
+#if OSCORE_WITH_HW_CRYPTO == 1
 
 #ifdef CONTIKI_TARGET_ZOUL
-#include "dev/ecc-algorithm.h"
-#include "dev/ecc-curve.h"
 #include "dev/sha256.h"
 #include "dev/cc2538-ccm-star.h"
 #endif /*CONTIKI_TARGET_ZOUL*/
 
 #ifdef CONTIKI_TARGET_SIMPLELINK
-//#include "ti/drivers/TRNG.h"
 #include "ti/drivers/SHA2.h"
-#include "ti/drivers/ECDSA.h"
 #include "ti/drivers/AESCCM.h"
 #include "ti/drivers/cryptoutils/cryptokey/CryptoKeyPlaintext.h"
-#include "ti/drivers/cryptoutils/ecc/ECCParams.h"
 static uint8_t sha2_hash(const uint8_t *message, size_t len, uint8_t *hash);
 #endif /*CONTIKI_TARGET_SIMPLELINK*/
 
@@ -85,11 +68,47 @@ static uint8_t sha2_hash(const uint8_t *message, size_t len, uint8_t *hash);
 #endif /*CONTIKI_TARGET_NATIVE*/
 
 #else /*SW crypto*/
-#include "uECC.h"
 #include "lib/ccm-star.h"
 #include "dtls-hmac.h"
 
 #endif /*OSCORE_WITH_HW_CRYPTO*/
+
+
+/*Settings for group OSCORE*/
+#if WITH_GROUPCOM == 1
+#include "sys/pt.h"
+#include "os/lib/queue.h"
+#include "os/lib/memb.h"
+#include "random.h"
+
+
+/*Group-OSCORE SW/HW crypto libraries*/
+#if OSCORE_WITH_HW_CRYPTO == 1
+
+#include "sys/pt-sem.h"
+process_event_t pe_crypto_lock_released;
+static struct pt_sem crypto_processor_mutex;
+
+#ifdef CONTIKI_TARGET_ZOUL
+#include "dev/ecc-algorithm.h"
+#include "dev/ecc-curve.h"
+#endif /*CONTIKI_TARGET_ZOUL*/
+
+#ifdef CONTIKI_TARGET_SIMPLELINK
+//#include "ti/drivers/TRNG.h"
+#include "ti/drivers/ECDSA.h"
+#include "ti/drivers/cryptoutils/cryptokey/CryptoKeyPlaintext.h"
+#include "ti/drivers/cryptoutils/ecc/ECCParams.h"
+#endif /*CONTIKI_TARGET_SIMPLELINK*/
+
+#ifdef CONTIKI_TARGET_NATIVE
+#error "Cannot run HW crypto on native!"
+#endif /*CONTIKI_TARGET_NATIVE*/
+
+#else /*SW crypto*/
+#include "uECC.h"
+
+#endif /*OSCORE_WITH_HW_CRYPTO == 1*/
 
 
 process_event_t pe_message_signed;
@@ -97,39 +116,58 @@ process_event_t pe_message_verified;
 
 PROCESS(signer, "signer");
 PROCESS(verifier, "verifier");
-#else /* unicast OSCORE */
-
-/*SW/HW crypto libraries*/
-#ifdef OSCORE_WITH_HW_CRYPTO
-#include "sys/pt-sem.h"
-process_event_t pe_crypto_lock_released;
-static struct pt_sem crypto_processor_mutex;
-
-#ifdef CONTIKI_TARGET_ZOUL
-#include "dev/sha256.h"
-#include "dev/cc2538-ccm-star.h"
-#endif /*CONTIKI_TARGET_ZOUL*/
-
-#ifdef CONTIKI_TARGET_SIMPLELINK
-#include "ti/drivers/SHA2.h"
-#include "ti/drivers/AESCCM.h"
-#include "ti/drivers/cryptoutils/cryptokey/CryptoKeyPlaintext.h"
-static uint8_t sha2_hash(const uint8_t *message, size_t len, uint8_t *hash);
-#endif /*CONTIKI_TARGET_SIMPLELINK*/
-
-#ifdef CONTIKI_TARGET_NATIVE
-#error "Cannot run HW crypto on native!"
-#endif /*CONTIKI_TARGET_NATIVE*/
-
-#else /*OSCORE_WITH_HW_CRYPTO*/
-#include "lib/ccm-star.h"
-#include "dtls-hmac.h"
-#endif /*OSCORE_WITH_HW_CRYPTO*/
 
 #endif /*WITH_GROUPCOM*/
+/**
+ * \brief Initialise oscore crypto resources (HW engines, processes, etc.).
+ *
+ */
+void
+oscore_crypto_init(void)
+{
+/* OSCORE HW Crypto */
+#if OSCORE_WITH_HW_CRYPTO == 1
+#ifdef CONTIKI_TARGET_ZOUL
+	crypto_init();
+	crypto_disable();
+#elif CONTIKI_TARGET_SIMPLELINK
+	AESCCM_init();
+	AESCCM_Params aesccm_params;
+	AESCCM_Params_init(&aesccm_params);
+	SHA2_init();
+	SHA2_Params sha_params;
+	SHA2_Params_init(&sha_params);
+	sha_params.returnBehavior = SHA2_RETURN_BEHAVIOR_BLOCKING;
+#endif	/*CONTIKI_TARGET_ZOUL*/
+#endif /*OSCORE_WITH_HW_CRYPTO*/
+
+/* Group-OSCORE HW Crypto */
+#if WITH_GROUPCOM == 1
+#ifdef OSCORE_WITH_HW_CRYPTO	
+#ifdef CONTIKI_TARGET_ZOUL
+	pka_init();
+	pka_disable();
+#elif CONTIKI_TARGET_SIMPLELINK
+//	TRNG_init();
+//	TRNG_Params trng_params;
+//	TRNG_Params_init(&trng_params);
+	ECDSA_init();
+	ECDSA_Params ecdsa_params;
+	ECDSA_Params_init(&ecdsa_params);
+#endif	/*CONTIKI_TARGET_ZOUL*/
+	PT_SEM_INIT(&crypto_processor_mutex, 1);
+	pe_crypto_lock_released = process_alloc_event();
+#endif /*OSCORE_WITH_HW_CRYPTO*/
+	pe_message_signed = process_alloc_event();
+	pe_message_verified = process_alloc_event();
+	process_start(&signer, NULL);
+	process_start(&verifier, NULL);
+#endif /* WITH_GROUPCOM */
+	LOG_INFO("OSCORE crypto initialised.\n");
+}
 /*Utilities*/
 /*---------------------------------------------------------------------------*/
-#ifdef OSCORE_WITH_HW_CRYPTO
+#if OSCORE_WITH_HW_CRYPTO == 1
 void
 reverse_endianness(uint8_t *a, unsigned int len) {
 	uint8_t i, tmp[len];
@@ -198,8 +236,11 @@ void convert_simplelink(uint8_t *a, size_t len) {
 	}
 	ec_uint32v_to_uint8v(a, a_32_rev, len);
 }
-#endif /*OSCORE_WITH_HW_CRYPTO*/
-/*OSCORE crypto functions*/
+#endif /*OSCORE_WITH_HW_CRYPTO == 1 */
+
+
+
+/* AES128-CCM encrypt and decrypt */
 /*---------------------------------------------------------------------------*/
 /* Returns 0 if failure to encrypt. Ciphertext length, otherwise.
    Tag-length and ciphertext length is derived from algorithm. No check is done to ensure
@@ -211,7 +252,17 @@ encrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
                   || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
     return -5;
   }
-  
+/*
+printf("encrypt key\n");
+for( int i = 0; i < key_len; i++) {
+	printf("%02X", key[i]);
+ } 
+printf("\n encrypt nonce\n");
+for( int i = 0; i < nonce_len; i++) {
+	printf("%02X", nonce[i]);
+ } 
+printf("\n");
+*/
 #ifdef OSCORE_WITH_HW_CRYPTO
 #ifdef CONTIKI_TARGET_ZOUL
   cc2538_ccm_star_driver.set_key(key);
@@ -274,7 +325,17 @@ decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
                 || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
     return -5;
   }
-  
+/*
+ printf("decrypt key\n");
+for( int i = 0; i < key_len; i++) {
+	printf("%02X", key[i]);
+ } 
+printf("\n decrypt nonce\n");
+for( int i = 0; i < nonce_len; i++) {
+	printf("%02X", nonce[i]);
+ } 
+printf("\n");
+*/  
   uint8_t tag_buffer[COSE_algorithm_AES_CCM_16_64_128_TAG_LEN];
   uint16_t plaintext_len = ciphertext_len - COSE_algorithm_AES_CCM_16_64_128_TAG_LEN;
 #ifdef OSCORE_WITH_HW_CRYPTO
@@ -332,23 +393,47 @@ decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonc
   return plaintext_len;
 }
 /*---------------------------------------------------------------------------*/
+/* SHA256 hash */
 #define OSCORE_HMAC_BLOCKSIZE 64
 #define OSCORE_HMAC_DIGEST_SIZE 32
 
 
-#ifdef OSCORE_WITH_HW_CRYPTO
+#if OSCORE_WITH_HW_CRYPTO == 1
+#ifdef CONTIKI_TARGET_SIMPLELINK
+static uint8_t
+sha2_hash(const uint8_t *message, size_t len, uint8_t *hash)
+{
+	int_fast16_t result;
+	/*One-step hash */
+	SHA2_Handle handle;
+	handle = SHA2_open(0, NULL);
+	if(!handle) {
+		LOG_ERR("SHA2: could not open handle!\n");
+		return -1;
+	}
+
+	result = SHA2_hashData(handle, message, len, hash);
+	if(result != SHA2_STATUS_SUCCESS) {
+		LOG_ERR("SHA2 failed, result: %d", result);
+	}
+	SHA2_close(handle);
+	return (uint8_t) result;
+}
+#endif /*CONTIKI_TARGET_SIMPLELINK*/
+/*---------------------------------------------------------------------------*/
 #ifdef CONTIKI_TARGET_ZOUL 
+/*---------------------------------------------------------------------------*/
 typedef struct {
   unsigned char pad[OSCORE_HMAC_BLOCKSIZE]; /**< ipad and opad storage */
   sha256_state_t data; /**< context for hash function */
 } oscore_hmac_context_t;
-
+/*---------------------------------------------------------------------------*/
 void
 oscore_hmac_update(oscore_hmac_context_t *ctx,
                  const unsigned char *input, size_t ilen) {
   sha256_process(&ctx->data, input, ilen);
 }
-
+/*---------------------------------------------------------------------------*/
 void
 oscore_hmac_init(oscore_hmac_context_t *ctx, const unsigned char *key, size_t klen) {
   int i;
@@ -373,7 +458,7 @@ oscore_hmac_init(oscore_hmac_context_t *ctx, const unsigned char *key, size_t kl
   for (i=0; i < OSCORE_HMAC_BLOCKSIZE; ++i)
     ctx->pad[i] ^= 0x6A;
 }
-
+/*---------------------------------------------------------------------------*/
 int
 oscore_hmac_finalize(oscore_hmac_context_t *ctx, unsigned char *result) {
   unsigned char buf[OSCORE_HMAC_DIGEST_SIZE];
@@ -392,10 +477,9 @@ oscore_hmac_finalize(oscore_hmac_context_t *ctx, unsigned char *result) {
   }
 
 }
-
+/*---------------------------------------------------------------------------*/
 #endif /* CONTIKI_TARGET_ZOUL */
 #endif /* OSCORE_WITH_HW_CRYPTO */
-
 
 /* only works with key_len <= 64 bytes */
 void
@@ -463,7 +547,6 @@ hmac_sha256(const uint8_t *key, uint8_t key_len, const uint8_t *data, uint8_t da
   dtls_hmac_finalize(&ctx, hmac);
 #endif /* OSCORE_WITH_HW_CRYPTO */
 }
-
 /*---------------------------------------------------------------------------*/
 int
 hkdf_extract( const uint8_t *salt, uint8_t salt_len, const uint8_t *ikm, uint8_t ikm_len, uint8_t *prk_buffer)
@@ -553,88 +636,8 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t
 
 PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *buffer, size_t buffer_len, uint8_t *signature));
 /*---------------------------------------------------------------------------*/
-/**
- * \brief Initialise oscore crypto resources (HW engines, processes, etc.).
- *
- */
-void
-oscore_crypto_init(void)
-{
-#ifdef OSCORE_WITH_HW_CRYPTO	
-#ifdef CONTIKI_TARGET_ZOUL
-	crypto_init();
-	crypto_disable();
-	pka_init();
-	pka_disable();
-#elif CONTIKI_TARGET_SIMPLELINK
-//	TRNG_init();
-//	TRNG_Params trng_params;
-//	TRNG_Params_init(&trng_params);
-	AESCCM_init();
-	AESCCM_Params aesccm_params;
-	AESCCM_Params_init(&aesccm_params);
-	SHA2_init();
-	SHA2_Params sha_params;
-	SHA2_Params_init(&sha_params);
-	sha_params.returnBehavior = SHA2_RETURN_BEHAVIOR_BLOCKING;
-	ECDSA_init();
-	ECDSA_Params ecdsa_params;
-	ECDSA_Params_init(&ecdsa_params);
-#endif	/*CONTIKI_TARGET_ZOUL*/
-	PT_SEM_INIT(&crypto_processor_mutex, 1);
-	pe_crypto_lock_released = process_alloc_event();
-#endif /*OSCORE_WITH_HW_CRYPTO*/
-	pe_message_signed = process_alloc_event();
-	pe_message_verified = process_alloc_event();
-	process_start(&signer, NULL);
-	process_start(&verifier, NULL);
-	LOG_INFO("OSCORE crypto initialised.\n");
-}
 #ifdef OSCORE_WITH_HW_CRYPTO
-#ifdef CONTIKI_TARGET_SIMPLELINK
-/*---------------------------------------------------------------------------*/
-static uint8_t
-sha2_hash(const uint8_t *message, size_t len, uint8_t *hash)
-{
-	int_fast16_t result;
-	/*One-step hash */
-	SHA2_Handle handle;
-	handle = SHA2_open(0, NULL);
-	if(!handle) {
-		LOG_ERR("SHA2: could not open handle!\n");
-		return -1;
-	}
-
-	result = SHA2_hashData(handle, message, len, hash);
-	if(result != SHA2_STATUS_SUCCESS) {
-		LOG_ERR("SHA2 failed, result: %d", result);
-	}
-	SHA2_close(handle);
-	return (uint8_t) result;
-}
-#endif /*CONTIKI_TARGET_SIMPLELINK*/
 #ifdef CONTIKI_TARGET_ZOUL
-/*---------------------------------------------------------------------------*/
-bool
-crypto_fill_random(uint8_t *buffer, size_t size_in_bytes)
-{
-	if(buffer == NULL) {
-		return false;
-	}
-
-	uint16_t *buffer_u16 = (uint16_t *)buffer;
-
-	for(size_t i = 0; i < size_in_bytes / sizeof(uint16_t); i++) {
-		buffer_u16[i] = random_rand();
-	}
-
-	if((size_in_bytes % sizeof(uint16_t)) != 0) {
-		buffer[size_in_bytes - 1] = (uint8_t)random_rand();
-	}
-
-	return true;
-}
-/*---------------------------------------------------------------------------*/
 static uint8_t
 sha256_hash(const uint8_t *buffer, size_t len, uint8_t *hash)
 {
@@ -665,6 +668,27 @@ end:
 	}
 	return ret;
 }
+/*---------------------------------------------------------------------------*/
+bool
+crypto_fill_random(uint8_t *buffer, size_t size_in_bytes)
+{
+	if(buffer == NULL) {
+		return false;
+	}
+
+	uint16_t *buffer_u16 = (uint16_t *)buffer;
+
+	for(size_t i = 0; i < size_in_bytes / sizeof(uint16_t); i++) {
+		buffer_u16[i] = random_rand();
+	}
+
+	if((size_in_bytes % sizeof(uint16_t)) != 0) {
+		buffer[size_in_bytes - 1] = (uint8_t)random_rand();
+	}
+
+	return true;
+}
+/*---------------------------------------------------------------------------*/
 #endif /*CONTIKI_TARGET_ZOUL*/
 #endif /*OSCORE_WITH_HW_CRYPTO*/
 /*---------------------------------------------------------------------------*/
