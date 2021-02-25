@@ -60,7 +60,6 @@
 
 /* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
 
-#define STACK_CHECK_CONF_ENABLED 0 
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
 #define ROLL_TM_CONF_IMIN_1         64
 
@@ -102,5 +101,7 @@
 
 
 //#define ENERGEST_CONF_ON 1
+#define STACK_CHECK_CONF_ENABLED 1 
+#define STACK_CHECK_CONF_PERIOD 30*CLOCK_SECOND
 
 #endif /* PROJECT_CONF_H_ */

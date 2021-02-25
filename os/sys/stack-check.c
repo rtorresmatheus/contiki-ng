@@ -48,8 +48,8 @@
 
 #include "sys/log.h"
 #define LOG_MODULE "Stack"
-#define LOG_LEVEL LOG_LEVEL_MAIN
-
+//#define LOG_LEVEL LOG_LEVEL_MAIN
+#define LOG_LEVEL LOG_LEVEL_DBG
 /*---------------------------------------------------------------------------*/
 /* linker will provide a symbol for the end of the .bss segment */
 extern uint8_t _stack;

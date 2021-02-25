@@ -58,8 +58,6 @@
 
 #endif /* TEST */
 
-//#define STACK_CHECK_CONF_ENABLED 1 
-
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
 #define ROLL_TM_CONF_IMIN_1         64
 
@@ -94,7 +92,6 @@
 #define LOG_CONF_LEVEL_6LOWPAN        LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_MAC      LOG_LEVEL_DBG
 */
-#define STACK_CHECK_CONF_ENABLED 0 
 
 #define UIP_CONF_UDP_CONNS 4
 #define UIP_CONF_BUFFER_SIZE 400
@@ -105,6 +102,8 @@
 //#define LPM_CONF_ENABLE 0
 
 //#define ENERGEST_CONF_ON 1
+#define STACK_CHECK_CONF_ENABLED 1 
+#define STACK_CHECK_CONF_PERIOD 30*CLOCK_SECOND
 
 
 #endif /* PROJECT_CONF_H_ */

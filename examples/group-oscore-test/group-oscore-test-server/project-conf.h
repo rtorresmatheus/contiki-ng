@@ -63,8 +63,6 @@
 #define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_SMRF
 #endif
 
-//#define STACK_CHECK_CONF_ENABLED 1 
-
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
 #define ROLL_TM_CONF_IMIN_1         64
 
@@ -99,17 +97,15 @@
 //#define LOG_CONF_LEVEL_6LOWPAN 	LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_MAC 	LOG_LEVEL_DBG
 */
-#define STACK_CHECK_CONF_ENABLED 0 
 
 #define UIP_CONF_UDP_CONNS 4
-#define UIP_CONF_BUFFER_SIZE 400
+#define UIP_CONF_BUFFER_SIZE 380
 //with the above 3 it was still 256 bytes too much
 #define QUEUEBUF_CONF_NUM 4 //decreased from 8
 
-//#undef LPM_CONF_ENABLE
-//#define LPM_CONF_ENABLE 0
-
 //#define ENERGEST_CONF_ON 1
+#define STACK_CHECK_CONF_ENABLED 1 
+#define STACK_CHECK_CONF_PERIOD 30*CLOCK_SECOND
 
 #define MSGS_TO_VERIFY_SIZE 1
 #define MSGS_TO_SIGN_SIZE 1
