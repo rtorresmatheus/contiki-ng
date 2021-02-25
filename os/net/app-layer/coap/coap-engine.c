@@ -186,7 +186,7 @@ coap_receive_cont(const coap_endpoint_t *src,
 int
 coap_receive(const coap_endpoint_t *src,
 		uint8_t *payload, uint16_t payload_length, uint8_t is_mcast)
-#endif /*WITH_GROUPCOM*/
+#endif /*WITH_GROUPCOM && WITH_OSCORE*/
 {
   /* static declaration reduces stack peaks and program code size */
   static coap_message_t message[1]; /* this way the message can be treated as pointer as usual */
@@ -200,7 +200,7 @@ coap_receive(const coap_endpoint_t *src,
   coap_handler_status_t status;
   uint8_t is_multicast = 0;
   const char *multicast_path = "mc/";
-#ifdef WITH_GROUPCOM
+#if defined WITH_GROUPCOM && defined WITH_OSCORE
   coap_status_code = in_status;
 #ifdef OSCORE_WITH_HW_CRYPTO
 #ifdef CONTIKI_TARGET_ZOUL
@@ -210,9 +210,9 @@ coap_receive(const coap_endpoint_t *src,
   }
 #endif /*CONTIKI_TARGET_ZOUL*/
 #endif /*OSCORE_WITH_HW_CRYPTO*/
-#else /*when not WITH_GROUPCOM */
+#else /*when not WITH_GROUPCOM or GROUPCOM without OSCORE*/
   coap_status_code = coap_parse_message(message, payload, payload_length);
-#endif /*WITH_GROUPCOM*/
+#endif /*WITH_GROUPCOM && WITH_OSCORE*/
   coap_set_src_endpoint(message, src);
   if(coap_status_code == NO_ERROR) {
     /*TODO duplicates suppression, if required by application */
