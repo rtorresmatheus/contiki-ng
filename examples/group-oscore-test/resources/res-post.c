@@ -43,9 +43,23 @@
 
 #ifdef PROCESSING_TIME
 #include "rtimer.h"
-unsigned long _processing_time_start = 0;
-unsigned long _processing_time_stop = 0;
-#endif
+unsigned long parsing_time_s = 0;
+unsigned long parsing_time_e = 0;
+unsigned long serializing_time_s = 0;
+unsigned long serializing_time_e = 0;
+#ifdef WITH_OSCORE
+unsigned long decryption_time_s = 0;
+unsigned long decryption_time_e = 0;
+unsigned long encryption_time_s = 0;
+unsigned long encryption_time_e = 0;
+#ifdef WITH_GROUPCOM
+unsigned long verify_time_s = 0;
+unsigned long verify_time_e = 0;
+unsigned long sign_time_s = 0;
+unsigned long sign_time_e = 0;
+#endif /* WITH_GROUPCOM */
+#endif /* WITH_OSCORE */
+#endif /* PROCESSING_TIME */
 
 /* Log configuration */
 #include "sys/log.h"
@@ -62,15 +76,25 @@ RESOURCE(res_post,
          res_post_put_handler,
          NULL);
 
-static uint8_t response_payload[256]; 
+static uint8_t response_payload[200]; 
 static void
 
 res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
   #ifdef PROCESSING_TIME
-  _processing_time_stop = RTIMER_NOW();
-  printf("p: %lu\n", (_processing_time_stop - _processing_time_start));
-  #endif
+  unsigned long parsing_time_e = RTIMER_NOW();
+
+  printf("p:%lu; ", (parsing_time_e - parsing_time_s));
+
+  #ifdef WITH_OSCORE
+  printf("d:%lu; ", (decryption_time_e - decryption_time_s));
+ 
+  #ifdef WITH_GROUPCOM
+  printf("v:%lu; ", (verify_time_e - verify_time_s));
+  #endif /* WITH_GROUPCOM */
+  #endif /* WITH_OSCORE */
+  printf("\n");
+  #endif /* PROCESSING_TIME */
 
   const uint8_t *payload = NULL;
   int payload_len = coap_get_payload(request, &payload);
@@ -87,7 +111,7 @@ res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t 
   	coap_set_status_code(response, BAD_REQUEST_4_00);
   }
   #ifdef PROCESSING_TIME
-  _processing_time_start = RTIMER_NOW();
+  serializing_time_s = RTIMER_NOW();
   #endif
 
 }

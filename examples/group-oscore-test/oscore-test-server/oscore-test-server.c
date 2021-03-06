@@ -52,9 +52,9 @@
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
 extern coap_resource_t
-#ifdef A
-  ret_stat,
-#endif /* A */
+#ifdef ENERGEST_CONF_ON
+  res_stat,
+#endif /* ENERGEST_CONF_ON */
   res_post;
 
 uint8_t master_secret[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
@@ -87,6 +87,9 @@ PROCESS_THREAD(er_example_server, ev, data)
   if(ctx == NULL){
     LOG_ERR("CONTEXT NOT FOUND\n");
   }
+  #ifdef ENERGEST_CONF_ON
+  coap_activate_resource(&res_stat, "uc/stat");
+  #endif /* ENERGEST_CONF_ON */
   coap_activate_resource(&res_post, "uc/post");
   /* Define application-specific events here. */
   while(1) {

@@ -51,9 +51,9 @@
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
 extern coap_resource_t
-#ifdef A
-  ret_stat,
-#endif /* A */
+#ifdef ENERGEST_CONF_ON
+  res_stat,
+#endif /* ENERGEST_CONF_ON */
   res_post;
 
 
@@ -66,6 +66,9 @@ PROCESS_THREAD(er_example_server, ev, data)
   PROCESS_PAUSE();
 
   coap_activate_resource(&res_post, "uc/post");
+#ifdef ENERGEST_CONF_ON
+  coap_activate_resource(&res_stat, "uc/stat");
+#endif /* ENERGEST_CONF_ON */
   
   while(1) {
     PROCESS_WAIT_EVENT();

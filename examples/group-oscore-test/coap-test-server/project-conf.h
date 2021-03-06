@@ -40,68 +40,6 @@
 #define PROJECT_CONF_H_
 
 #include "net/ipv6/multicast/uip-mcast6-engines.h"
-
-#define RF_CONF_MODE RF_MODE_2_4_GHZ
-
-/*(1) Memory occupancy (RAM and ROM)(2) Time spent by the CPU to process incoming/outgoing messages(3) Time spent by the radio to transmit CoAP messages(4) Time spent by the radio to receive CoAP messages(5) Energy consumed by the CPU to process incoming/outgoing messages(6) Energy consumed by the radio to transmit CoAP responses(7) Energy consumed by the radio to receive CoAP requests(8)Round Trip Time experienced by the client, measured since the time the CoAP request is sent until the last CoAPresponse is received. */
-
-#if TEST == 1 //Memory Tests
-
-#elif TEST == 2 //CPU Test
-
-#elif TEST == 3 //Radio Test send
-
-#elif TEST == 4 //Radio Test receive
-
-#elif TEST == 8 //Round Trip Time Test
-#else
-
-#endif /* TEST */
-
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-
-/* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
-#define ROLL_TM_CONF_IMIN_1         64
-
-#define UIP_MCAST6_ROUTE_CONF_ROUTES 3
-
-/* Code/RAM footprint savings so that things will fit on our device */
-#ifndef NETSTACK_MAX_ROUTE_ENTRIES
-#define NETSTACK_MAX_ROUTE_ENTRIES  3
-#endif
-
-#ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS 3 
-#endif
-
-#define REST_MAX_CHUNK_SIZE 230
-
-#define COAP_GROUPCOM_DELAY 0
-/*For testing*/
-#define LOG_LEVEL_APP LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_COAP LOG_LEVEL_NONE
-#define LOG_CONF_LEVEL_MAIN LOG_LEVEL_NONE
-/*
-*/
-/* For debug */
-/*
-#define LOG_LEVEL_APP           LOG_LEVEL_DBG
-#define LOG_LEVEL_APP           LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_RPL    LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_6LOWPAN        LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_MAC      LOG_LEVEL_DBG
-*/
-
-#define UIP_CONF_UDP_CONNS 4
-#define UIP_CONF_BUFFER_SIZE 400
-#define QUEUEBUF_CONF_NUM 4 //decreased from 8
-
-
-//#define ENERGEST_CONF_ON 1
-#define STACK_CHECK_CONF_ENABLED 1 
-#define STACK_CHECK_CONF_PERIOD 30*CLOCK_SECOND
+#include "../common-conf.h"
 
 #endif /* PROJECT_CONF_H_ */

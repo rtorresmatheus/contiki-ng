@@ -52,13 +52,12 @@
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
 extern coap_resource_t
-#ifdef A
-  ret_stat,
-#endif /* A */
+#ifdef ENERGEST_CONF_ON
   res_stat,
+#endif /* ENERGEST_CONF_ON */
   res_post;
 
-
+#define SERVER 1
 uint8_t master_secret[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
 uint8_t salt[8] = {0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40};
 uint8_t sender_id[1] = { 0x52 };
@@ -112,10 +111,10 @@ PROCESS_THREAD(er_example_server, ev, data)
   }
   oscore_add_group_keys(ctx, snd_public_key, snd_private_key, rcv_public_key, rcv_private_key, COSE_Algorithm_ES256, COSE_Elliptic_Curve_P256);  
   coap_activate_resource(&res_post, "mc/post");
+#ifdef ENERGEST_CONF_ON
   coap_activate_resource(&res_stat, "mc/stat");
+#endif /* ENERGEST_CONF_ON */
   
-  //multicast initialisation stuff here
-  //uip_ip6addr(addr, addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7)
   /* Define application-specific events here. */
   while(1) {
     PROCESS_WAIT_EVENT();

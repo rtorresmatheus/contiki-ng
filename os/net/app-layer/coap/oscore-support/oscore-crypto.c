@@ -248,10 +248,14 @@ void convert_simplelink(uint8_t *a, size_t len) {
 int
 encrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonce_len,
         uint8_t *aad, uint8_t aad_len, uint8_t *buffer, uint16_t plaintext_len) {
+#ifdef PROCESSING_TIME
+encryption_time_s = RTIMER_NOW();
+#endif /* PROCESSING_TIME */
   if(alg != COSE_Algorithm_AES_CCM_16_64_128 || key_len !=  COSE_algorithm_AES_CCM_16_64_128_KEY_LEN
                   || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
     return -5;
   }
+
 /*
 printf("encrypt key\n");
 for( int i = 0; i < key_len; i++) {
@@ -312,6 +316,10 @@ printf("\n");
   CCM_STAR.aead(nonce, buffer, plaintext_len, aad, aad_len, &(buffer[plaintext_len]), COSE_algorithm_AES_CCM_16_64_128_TAG_LEN, 1);
 #endif /* OSCORE_WITH_HW_CRYPTO */
 
+#ifdef PROCESSING_TIME
+encryption_time_e = RTIMER_NOW();
+#endif /* PROCESSING_TIME */
+
   return plaintext_len + COSE_algorithm_AES_CCM_16_64_128_TAG_LEN;
 }
 /*---------------------------------------------------------------------------*/
@@ -321,6 +329,10 @@ printf("\n");
 int
 decrypt(uint8_t alg, uint8_t *key, uint8_t key_len, uint8_t *nonce, uint8_t nonce_len,
         uint8_t *aad, uint8_t aad_len, uint8_t *buffer, uint16_t ciphertext_len){
+#ifdef PROCESSING_TIME
+decryption_time_s = RTIMER_NOW();
+#endif /* PROCESSING_TIME */
+
   if(alg != COSE_Algorithm_AES_CCM_16_64_128 || key_len != COSE_algorithm_AES_CCM_16_64_128_KEY_LEN
                 || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
     return -5;
@@ -390,6 +402,9 @@ printf("\n");
   if(memcmp(tag_buffer, &(buffer[plaintext_len]), COSE_algorithm_AES_CCM_16_64_128_TAG_LEN) != 0) {
           return 0; /* Decryption failure */
   }
+#ifdef PROCESSING_TIME
+decryption_time_e = RTIMER_NOW();
+#endif /* PROCESSING_TIME */
   return plaintext_len;
 }
 /*---------------------------------------------------------------------------*/
@@ -758,6 +773,10 @@ PT_THREAD(ecc_verify_sw(verify_state_t *state, uint8_t *public_key, uint8_t *mes
 PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t *private_key, uint8_t *public_key, uint8_t *signature))
 {
 	PT_BEGIN(&state->pt);
+#ifdef PROCESSING_TIME
+sign_time_s = RTIMER_NOW();
+#endif /* PROCESSING_TIME */
+
 	uint8_t message_hash[SHA256_DIGEST_LENGTH];/*==SHA56_DIGEST_LEN_BYTES*/
 #ifdef OSCORE_WITH_HW_CRYPTO
 	uint8_t sha_ret;
@@ -896,12 +915,18 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t
 	PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 #endif /*CONTIKI_TARGET_ZOUL*/
 #endif /*OSCORE_WITH_HW_CRYPTO*/
+#ifdef PROCESSING_TIME
+sign_time_e = RTIMER_NOW();
+#endif /* PROCESSING_TIME */
 	PT_END(&state->pt);
 }
 
 PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *buffer, size_t buffer_len, uint8_t *signature))
 {
 	PT_BEGIN(&state->pt);
+#ifdef PROCESSING_TIME
+verify_time_s = RTIMER_NOW();
+#endif /* PROCESSING_TIME */
 #ifdef OSCORE_WITH_HW_CRYPTO
 	PT_SEM_WAIT(&state->pt, &crypto_processor_mutex);
 #endif /*OSCORE_WITH_HW_CRYPTO*/
@@ -1012,6 +1037,9 @@ PT_THREAD(ecc_verify(verify_state_t *state, uint8_t *public_key, const uint8_t *
 	}
 #endif /*CONTIKI_TARGET_ZOUL*/
 #endif /*OSCORE_WITH_HW_CRYPTO*/
+#ifdef PROCESSING_TIME
+verify_time_e = RTIMER_NOW();
+#endif /* PROCESSING_TIME */
 	PT_END(&state->pt);
 }	
 

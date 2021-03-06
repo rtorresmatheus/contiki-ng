@@ -6,7 +6,7 @@ PLATFORMS_EXCLUDE = sky z1
 
 MAKE_WITH_OSCORE = 1
 MAKE_WITH_GROUPCOM = 1
-MAKE_WITH_HW_CRYPTO = 1
+#MAKE_WITH_HW_CRYPTO = 1
 
 # Include the CoAP implementation
 MODULES += os/net/app-layer/coap
@@ -14,23 +14,15 @@ MODULES += os/net/app-layer/coap
 # Include the Multicast implementation
 MODULES += os/net/ipv6/multicast
 
-#CFLAGS += -E
-
-#If no SERVER is defined use Server 1
-ifeq ($(strip $(SERVER)),)
-CFLAGS += -DSERVER=1
+#Determine what tetst to build, 4 (RTT) by default
+ifeq ($(strip $(TEST)),)
+CFLAGS += -DTEST=4
 else
-CFLAGS += -DSERVER=$(SERVER)
-endif
-
-#If no TEST is defined do not use any
-ifdef $(TEST)
 CFLAGS += -DTEST=$(TEST)
 endif
 
-
 # Include CoAP resources
-MODULES_REL += ./resources
+MODULES_REL += ../resources
 
 #dissable Werror for now
 WERROR=0
