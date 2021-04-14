@@ -393,6 +393,9 @@ printf("\n");
   }
   memcpy(buffer, output, plaintext_len);
   AESCCM_close(handle);
+#ifdef PROCESSING_TIME
+decryption_time_e = RTIMER_NOW();
+#endif /* PROCESSING_TIME */
   return plaintext_len;
 #endif /*CONTIKI_TARGET_ZOUL or CONTIKI_TARGET_SIMPLELINK */
 #else /* not OSCORE_WITH_HW_CRYPTO  */

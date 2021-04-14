@@ -445,6 +445,15 @@ coap_receive(const coap_endpoint_t *src,
         coap_send_transaction(transaction);
       }
 #else   /* No WITH_GROUPCOM */
+	#if defined PROCESSING_TIME
+        serializing_time_e = RTIMER_NOW();
+        printf("s:%lu; ", (serializing_time_e - serializing_time_s));
+        #ifdef WITH_OSCORE && !(defined WITH_GROUPCOM)
+        printf("e:%lu; ", (encryption_time_e - encryption_time_s));
+        #endif /* WITH_OSCORE */
+        printf("\n");
+        #endif /* PROCESSING_TIME */
+
 	coap_send_transaction(transaction);
 #endif /*WITH_GROUPCOM*/
         

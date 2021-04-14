@@ -515,14 +515,14 @@ PROCESS_THREAD(coap_engine, ev, data)
 	#endif /* PROCESSING_TIME */
  	process_data();
 
-	#if defined PROCESSING_TIME && !(defined WITH_GROUPCOM)
-	serializing_time_e = RTIMER_NOW();
-        printf("s:%lu; ", (serializing_time_e - serializing_time_s));
-	#ifdef WITH_OSCORE
-  	printf("e:%lu; ", (encryption_time_e - encryption_time_s));
-	#endif /* WITH_OSCORE */
-	printf("\n");
-	#endif /* PROCESSING_TIME */
+//	#if defined PROCESSING_TIME
+//	serializing_time_e = RTIMER_NOW();
+//        printf("s:%lu; ", (serializing_time_e - serializing_time_s));
+//	#ifdef WITH_OSCORE && !(defined WITH_GROUPCOM)
+//  	printf("e:%lu; ", (encryption_time_e - encryption_time_s));
+//	#endif /* WITH_OSCORE */
+//	printf("\n");
+//	#endif /* PROCESSING_TIME */
 
 
       }
