@@ -41,7 +41,7 @@
 #include <string.h>
 #include "contiki.h"
 #include "coap-engine.h"
-
+#include "sys/etimer.h"
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -55,7 +55,6 @@ extern coap_resource_t
   res_stat,
 #endif /* ENERGEST_CONF_ON */
   res_post;
-
 
 PROCESS(er_example_server, "Erbium Example Server");
 AUTOSTART_PROCESSES(&er_example_server);

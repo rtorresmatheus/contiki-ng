@@ -15,6 +15,11 @@
 
 #elif TEST == 4 //Round Trip Time Test
 #define STACK_CHECK_CONF_ENABLED 0 
+
+#elif TEST == 5 //Otii Energy mesurements
+#define OTII_ENERGY 1 
+#define STACK_CHECK_CONF_ENABLED 0 
+
 #else
 #endif /* TEST */
 

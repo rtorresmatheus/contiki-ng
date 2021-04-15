@@ -513,17 +513,10 @@ PROCESS_THREAD(coap_engine, ev, data)
 	#ifdef PROCESSING_TIME
 	parsing_time_s = RTIMER_NOW();
 	#endif /* PROCESSING_TIME */
- 	process_data();
-
-//	#if defined PROCESSING_TIME
-//	serializing_time_e = RTIMER_NOW();
-//        printf("s:%lu; ", (serializing_time_e - serializing_time_s));
-//	#ifdef WITH_OSCORE && !(defined WITH_GROUPCOM)
-//  	printf("e:%lu; ", (encryption_time_e - encryption_time_s));
-//	#endif /* WITH_OSCORE */
-//	printf("\n");
-//	#endif /* PROCESSING_TIME */
-
+	#ifdef OTII_ENERGY
+	printf("PS\n");
+	#endif /* OTII_ENERGY */ 
+	process_data();
 
       }
     }
@@ -543,6 +536,9 @@ PROCESS_THREAD(coap_engine, ev, data)
   	    printf("e:%lu; ", (encryption_time_e - encryption_time_s));
   	    printf("g:%lu;\n", (sign_time_e - sign_time_s));
 	    #endif /* PROCESSING_TIME */
+   	    #ifdef OTII_ENERGY
+	    printf("SE\n");
+	    #endif /* OTII_ENERGY */
     }
 #endif /* WITH_GROUPCOM */
   } /* while (1) */

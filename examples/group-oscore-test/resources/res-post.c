@@ -95,7 +95,9 @@ res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t 
   #endif /* WITH_OSCORE */
   printf("\n");
   #endif /* PROCESSING_TIME */
-
+  #ifdef OTII_ENERGY
+  printf("PE\n");
+  #endif /* OTII_ENERGY */
   const uint8_t *payload = NULL;
   int payload_len = coap_get_payload(request, &payload);
   if( payload_len != 0 && payload != NULL) {
@@ -113,5 +115,8 @@ res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t 
   #ifdef PROCESSING_TIME
   serializing_time_s = RTIMER_NOW();
   #endif
+  #ifdef OTII_ENERGY
+  printf("SS\n");
+  #endif /* OTII_ENERGY */
 
 }
