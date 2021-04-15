@@ -36,48 +36,66 @@
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#include <stdlib.h>
-#include <string.h>
+#include "contiki.h"
 #include "coap-engine.h"
+#include "dev/leds.h"
 
-static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+#include <string.h>
 
-/*
- * A handler function named [resource name]_handler must be implemented for each RESOURCE.
- * A buffer for the response payload is provided through the buffer pointer. Simple resources can ignore
- * preferred_size and offset, but must respect the REST_MAX_CHUNK_SIZE limit for the buffer.
- * If a smaller block size is requested for CoAP, the REST framework automatically splits the data.
- */
-RESOURCE(res_hello,
-         "title=\"Hello world: ?len=0..\";rt=\"Text\"",
-         res_get_handler,
+#if PLATFORM_HAS_LEDS || LEDS_COUNT
+
+/* Log configuration */
+#include "sys/log.h"
+#define LOG_MODULE "App"
+#define LOG_LEVEL LOG_LEVEL_APP
+
+static void res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+
+/* A simple actuator example, depending on the color query parameter and post variable mode, corresponding led is activated or deactivated */
+RESOURCE(res_leds,
+         "title=\"LEDs: ?color=r|g|b, POST/PUT mode=on|off\";rt=\"Control\"",
          NULL,
-         NULL,
+         res_post_put_handler,
+         res_post_put_handler,
          NULL);
 
 static void
-res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  const char *len = NULL;
-  /* Some data that has the length up to REST_MAX_CHUNK_SIZE. For more, see the chunk resource. */
-  char const *const message = "Hello World! ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy";
-  int length = 12; /*           |<-------->| */
+  size_t len = 0;
+  const char *color = NULL;
+  const char *mode = NULL;
+  uint8_t led = 0;
+  int success = 1;
 
-  /* The query string can be retrieved by rest_get_query() or parsed for its key-value pairs. */
-  if(coap_get_query_variable(request, "len", &len)) {
-    length = atoi(len);
-    if(length < 0) {
-      length = 0;
+  if((len = coap_get_query_variable(request, "color", &color))) {
+    LOG_DBG("color %.*s\n", (int)len, color);
+
+    if(strncmp(color, "r", len) == 0) {
+      led = LEDS_RED;
+    } else if(strncmp(color, "g", len) == 0) {
+      led = LEDS_GREEN;
+    } else if(strncmp(color, "b", len) == 0) {
+      led = LEDS_BLUE;
+    } else {
+      success = 0;
     }
-    if(length > REST_MAX_CHUNK_SIZE) {
-      length = REST_MAX_CHUNK_SIZE;
-    }
-    memcpy(buffer, message, length);
   } else {
-    memcpy(buffer, message, length);
-  }
+    success = 0;
+  } if(success && (len = coap_get_post_variable(request, "mode", &mode))) {
+    LOG_DBG("mode %s\n", mode);
 
-  coap_set_header_content_format(response, TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
-  coap_set_header_etag(response, (uint8_t *)&length, 1);
-  coap_set_payload(response, buffer, length);
+    if(strncmp(mode, "on", len) == 0) {
+      leds_on(led);
+    } else if(strncmp(mode, "off", len) == 0) {
+      leds_off(led);
+    } else {
+      success = 0;
+    }
+  } else {
+    success = 0;
+  } if(!success) {
+    coap_set_status_code(response, BAD_REQUEST_4_00);
+  }
 }
+#endif /* PLATFORM_HAS_LEDS */

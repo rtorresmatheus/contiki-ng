@@ -36,48 +36,35 @@
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "coap-engine.h"
 
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
 /*
- * A handler function named [resource name]_handler must be implemented for each RESOURCE.
- * A buffer for the response payload is provided through the buffer pointer. Simple resources can ignore
- * preferred_size and offset, but must respect the REST_MAX_CHUNK_SIZE limit for the buffer.
- * If a smaller block size is requested for CoAP, the REST framework automatically splits the data.
+ * Example for a resource that also handles all its sub-resources.
+ * Use coap_get_url() to multiplex the handling of the request depending on the Uri-Path.
  */
-RESOURCE(res_hello,
-         "title=\"Hello world: ?len=0..\";rt=\"Text\"",
-         res_get_handler,
-         NULL,
-         NULL,
-         NULL);
+PARENT_RESOURCE(res_sub,
+                "title=\"Sub-resource demo\"",
+                res_get_handler,
+                NULL,
+                NULL,
+                NULL);
 
 static void
 res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  const char *len = NULL;
-  /* Some data that has the length up to REST_MAX_CHUNK_SIZE. For more, see the chunk resource. */
-  char const *const message = "Hello World! ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy";
-  int length = 12; /*           |<-------->| */
+  coap_set_header_content_format(response, TEXT_PLAIN);
 
-  /* The query string can be retrieved by rest_get_query() or parsed for its key-value pairs. */
-  if(coap_get_query_variable(request, "len", &len)) {
-    length = atoi(len);
-    if(length < 0) {
-      length = 0;
-    }
-    if(length > REST_MAX_CHUNK_SIZE) {
-      length = REST_MAX_CHUNK_SIZE;
-    }
-    memcpy(buffer, message, length);
+  const char *uri_path = NULL;
+  int len = coap_get_header_uri_path(request, &uri_path);
+  int base_len = strlen(res_sub.url);
+
+  if(len == base_len) {
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "Request any sub-resource of /%s", res_sub.url);
   } else {
-    memcpy(buffer, message, length);
-  }
-
-  coap_set_header_content_format(response, TEXT_PLAIN); /* text/plain is the default, hence this option could be omitted. */
-  coap_set_header_etag(response, (uint8_t *)&length, 1);
-  coap_set_payload(response, buffer, length);
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, ".%.*s", len - base_len, uri_path + base_len);
+  } coap_set_payload(response, buffer, strlen((char *)buffer));
 }

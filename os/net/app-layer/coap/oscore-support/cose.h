@@ -41,11 +41,13 @@
 #define _COSE_H
 #include <inttypes.h>
 
+#if WITH_GROUPCOM == 1
 #define COSE_Algorithm_ES256	 -7
 #define COSE_Elliptic_Curve_P256  1
 #define ES256_SIGNATURE_LEN      64
 #define ES256_PRIVATE_KEY_LEN  	 32
 #define ES256_PUBLIC_KEY_LEN     64
+#endif /* WITH_GROUPCOM == 1*/
 
 #define COSE_Algorithm_AES_CCM_16_64_128 10
 #define COSE_algorithm_AES_CCM_64_64_128_KEY_LEN 16
@@ -87,6 +89,7 @@ typedef struct cose_encrypt0_t {
 
 } cose_encrypt0_t;
 
+#if WITH_GROUPCOM == 1
 /* COSE Sign1 Struct */
 typedef struct cose_sign1_t {
 
@@ -108,6 +111,7 @@ typedef struct cose_sign1_t {
   uint8_t *signature;
   int signature_len;
 } cose_sign1_t;
+#endif /* WITH_GROUPCOM == 1 */
 
 /* Return length */
 int cose_encrypt0_encode(cose_encrypt0_t *ptr, uint8_t *buffer);
@@ -148,6 +152,8 @@ void cose_encrypt0_set_nonce(cose_encrypt0_t *ptr, uint8_t *buffer, int size);
 int cose_encrypt0_encrypt(cose_encrypt0_t *ptr);
 int cose_encrypt0_decrypt(cose_encrypt0_t *ptr);
 
+
+#if WITH_GROUPCOM == 1
 /* COSE Sign-1 signature functions */
 
 void cose_sign1_init(cose_sign1_t *ptr);
@@ -177,6 +183,5 @@ void cose_sign1_set_sigstructure(cose_sign1_t *ptr,
                                  uint8_t *buffer, int size);
 
 int cose_sign1_verify(cose_sign1_t *ptr);
-
-
+#endif /* WITH_GROUPCOM == 1 */
 #endif /* _COSE_H */

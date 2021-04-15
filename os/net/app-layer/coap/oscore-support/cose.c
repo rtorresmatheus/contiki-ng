@@ -177,6 +177,7 @@ cose_encrypt0_decrypt(cose_encrypt0_t *ptr)
   return decrypt(ptr->alg, ptr->key, ptr->key_len, ptr->nonce, ptr->nonce_len, ptr->aad, ptr->aad_len, ptr->content, ptr->content_len);
 }
 
+#if WITH_GROUPCOM == 1 
 void cose_sign1_init(cose_sign1_t *ptr){
   memset( ptr, 0, sizeof(cose_sign1_t));
 }
@@ -225,4 +226,5 @@ int cose_sign1_verify(cose_sign1_t *ptr){
     return oscore_edDSA_verify(ptr->alg, ptr->alg_param, ptr->signature, ptr->ciphertext, ptr->ciphertext_len, ptr->public_key);
 }
 
+#endif /* WITH_GROUPCOM == 1 */
 

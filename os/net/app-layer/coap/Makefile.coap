@@ -4,7 +4,7 @@ MAKE_WITH_GROUPCOM ?= 0
 MAKE_WITH_HW_CRYPTO ?= 0
 
 
-
+#For unicast OSCORE
 ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
  
  CFLAGS += -DWITH_OSCORE=1
@@ -39,6 +39,13 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
     
   endif #MAKE_WITH_HW_CRYPTO
   endif #Zoul
+  
+  #SW Crypto configurations for Native
+  ifeq ($(TARGET), native)
+    CFLAGS += -DCCM_STAR_CONF=ccm_star_driver
+    MODULES += os/net/security/tinydtls/sha2
+    CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
+  endif #Native
 
 else ifeq ($(MAKE_WITH_DTLS),1)
 
@@ -70,7 +77,7 @@ else ifeq ($(MAKE_WITH_DTLS),1)
  endif
 endif 
 
-
+#For Group-OSCORE
 ifeq ($(strip $(MAKE_WITH_GROUPCOM)),1)
   CFLAGS += -DWITH_GROUPCOM=1
  
