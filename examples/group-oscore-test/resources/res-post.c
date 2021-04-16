@@ -96,7 +96,7 @@ res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t 
   printf("\n");
   #endif /* PROCESSING_TIME */
   #ifdef OTII_ENERGY
-  printf("PE\n");
+  printf("B\n");
   #endif /* OTII_ENERGY */
   const uint8_t *payload = NULL;
   int payload_len = coap_get_payload(request, &payload);
@@ -116,7 +116,7 @@ res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t 
   serializing_time_s = RTIMER_NOW();
   #endif
   #ifdef OTII_ENERGY
-  printf("SS\n");
+  printf("C\n");
   #endif /* OTII_ENERGY */
 
 }

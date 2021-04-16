@@ -454,7 +454,7 @@ coap_receive(const coap_endpoint_t *src,
         printf("\n");
         #endif /* PROCESSING_TIME */
 	#ifdef OTII_ENERGY
-	printf("SE\n");
+	printf("D\n");
 	#endif /* OTII_ENERGY */
 	coap_send_transaction(transaction);
 #endif /*WITH_GROUPCOM*/

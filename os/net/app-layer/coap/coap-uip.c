@@ -514,7 +514,7 @@ PROCESS_THREAD(coap_engine, ev, data)
 	parsing_time_s = RTIMER_NOW();
 	#endif /* PROCESSING_TIME */
 	#ifdef OTII_ENERGY
-	printf("PS\n");
+	printf("A\n");
 	#endif /* OTII_ENERGY */ 
 	process_data();
 
@@ -537,7 +537,7 @@ PROCESS_THREAD(coap_engine, ev, data)
   	    printf("g:%lu;\n", (sign_time_e - sign_time_s));
 	    #endif /* PROCESSING_TIME */
    	    #ifdef OTII_ENERGY
-	    printf("SE\n");
+	    printf("D\n");
 	    #endif /* OTII_ENERGY */
     }
 #endif /* WITH_GROUPCOM */
