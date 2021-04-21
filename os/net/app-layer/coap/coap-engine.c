@@ -429,18 +429,19 @@ coap_receive(const coap_endpoint_t *src,
     /* if(parsed correctly) */
   if(coap_status_code == NO_ERROR) {
     if(transaction) {
-#ifdef WITH_GROUPCOM
 
+#ifdef WITH_GROUPCOM
 /* Eval printouts for Group-CoAP */
 #if defined WITH_GROUPCOM && WITH_OSCORE == 0
 #if defined PROCESSING_TIME
         serializing_time_e = RTIMER_NOW();
-        printf("s:%lu; ", (serializing_time_e - serializing_time_s));
+        printf("s:%lu;\n", (serializing_time_e - serializing_time_s));
 #endif /* defined PROCESSING_TIME */
 #ifdef OTII_ENERGY
 	printf("D\n");
 #endif /* OTII_ENERGY */
 #endif /* WITH_GROUPCOM && WITH_OSCORE == 0 */
+
       if(is_mcast) {
         /*Copy transport data to a timer data. The response will be sent at timer expiration.*/
 #if COAP_GROUPCOM_DELAY == 0 
@@ -459,7 +460,7 @@ coap_receive(const coap_endpoint_t *src,
 	#if defined PROCESSING_TIME
         serializing_time_e = RTIMER_NOW();
         printf("s:%lu; ", (serializing_time_e - serializing_time_s));
-        #ifdef WITH_OSCORE && !(defined WITH_GROUPCOM)
+        #if defined WITH_OSCORE && !(defined WITH_GROUPCOM)
         printf("e:%lu; ", (encryption_time_e - encryption_time_s));
         #endif /* WITH_OSCORE */
         printf("\n");

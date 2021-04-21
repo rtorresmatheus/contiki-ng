@@ -21,7 +21,7 @@
 #define STACK_CHECK_CONF_ENABLED 0 
 
 //FOR ZOUL, send prints over GPIO-UART instead of over the USB interface
-#define DBG_CONF_UART 1
+//#define DBG_CONF_UART 1
 
 #else
 #endif /* TEST */
