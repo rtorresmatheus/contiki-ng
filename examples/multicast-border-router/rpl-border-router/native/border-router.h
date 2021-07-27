@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
+ * Copyright (c) 2011, Swedish Institute of Computer Science.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,31 +25,35 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- * This file is part of the Contiki operating system.
  */
 
 /**
  * \file
- *      Erbium (Er) example project configuration.
+ *         Border router header file
  * \author
- *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
+ *         Joakim Eriksson <joakime@sics.se>
  */
 
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
+#ifndef BORDER_ROUTER_H_
+#define BORDER_ROUTER_H_
 
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
-#include "../common-conf.h"
+#include "contiki.h"
+#include "net/ipv6/uip.h"
+#include <stdio.h>
 
+int border_router_cmd_handler(const uint8_t *data, int len);
+int slip_config_handle_arguments(int argc, char **argv);
+void write_to_slip(const uint8_t *buf, int len);
 
-/*(1) Memory occupancy (RAM and ROM)(2) Time spent by the CPU to process incoming/outgoing messages(3) Time spent by the radio to transmit CoAP messages(4) Time spent by the radio to receive CoAP messages(5) Energy consumed by the CPU to process incoming/outgoing messages(6) Energy consumed by the radio to transmit CoAP responses(7) Energy consumed by the radio to receive CoAP requests(8)Round Trip Time experienced by the client, measured since the time the CoAP request is sent until the last CoAPresponse is received. */
+void border_router_set_prefix_64(const uip_ipaddr_t *prefix_64);
+void border_router_set_mac(const uint8_t *data);
+void border_router_set_sensors(const char *data, int len);
+void border_router_print_stat(void);
 
+void tun_init(void);
 
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-#ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_ESMRF
-#endif
+int slip_init(void);
+int slip_set_fd(int maxfd, fd_set *rset, fd_set *wset);
+void slip_handle_fd(fd_set *rset, fd_set *wset);
 
-
-#endif /* PROJECT_CONF_H_ */
+#endif /* BORDER_ROUTER_H_ */

@@ -55,7 +55,14 @@
 #define LOG_LEVEL  LOG_LEVEL_APP
 
 /* FIXME: This server address is hard-coded for Cooja and link-local for unconnected border router. */
-#define SERVER_EP "coap://[fe80::212:7402:0002:0202]"
+//#define SERVER_EP "coap://[fe80::212:7402:0002:0202]"
+#define SERVER_EP "coap://[ff1E::89:ABCD]"
+
+#if !NETSTACK_CONF_WITH_IPV6 || !UIP_IPV6_MULTICAST || !UIP_CONF_IPV6_RPL
+#error "This example can not work with the current contiki configuration"
+#error "Check the values of: NETSTACK_CONF_WITH_IPV6, UIP_CONF_IPV6_RPL"
+#endif
+
 
 #define TOGGLE_INTERVAL 10
 

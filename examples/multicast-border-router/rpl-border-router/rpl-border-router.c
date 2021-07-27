@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
+ * Copyright (c) 2017, RISE SICS
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,29 +27,51 @@
  * SUCH DAMAGE.
  *
  * This file is part of the Contiki operating system.
+ *
  */
 
-/**
- * \file
- *      Erbium (Er) example project configuration.
- * \author
- *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
- */
+#include "contiki.h"
+#include "net/routing/routing.h"
+#include "rpl-border-router/rpl-border-router.h"
 
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
+/* Log configuration */
+#include "sys/log.h"
+#define LOG_MODULE "BR"
+#define LOG_LEVEL LOG_LEVEL_INFO
 
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
-#include "../common-conf.h"
+uint8_t prefix_set;
 
+/*---------------------------------------------------------------------------*/
+void
+print_local_addresses(void)
+{
+  int i;
+  uint8_t state;
 
-/*(1) Memory occupancy (RAM and ROM)(2) Time spent by the CPU to process incoming/outgoing messages(3) Time spent by the radio to transmit CoAP messages(4) Time spent by the radio to receive CoAP messages(5) Energy consumed by the CPU to process incoming/outgoing messages(6) Energy consumed by the radio to transmit CoAP responses(7) Energy consumed by the radio to receive CoAP requests(8)Round Trip Time experienced by the client, measured since the time the CoAP request is sent until the last CoAPresponse is received. */
-
-
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-#ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_ESMRF
-#endif
-
-
-#endif /* PROJECT_CONF_H_ */
+  LOG_INFO("Server IPv6 addresses:\n");
+  for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
+    state = uip_ds6_if.addr_list[i].state;
+    if(uip_ds6_if.addr_list[i].isused &&
+       (state == ADDR_TENTATIVE || state == ADDR_PREFERRED)) {
+      LOG_INFO("  ");
+      LOG_INFO_6ADDR(&uip_ds6_if.addr_list[i].ipaddr);
+      LOG_INFO_("\n");
+    }
+  }
+}
+/*---------------------------------------------------------------------------*/
+void
+set_prefix_64(uip_ipaddr_t *prefix_64)
+{
+  prefix_set = 1;
+  NETSTACK_ROUTING.root_set_prefix(prefix_64, NULL);
+  NETSTACK_ROUTING.root_start();
+}
+/*---------------------------------------------------------------------------*/
+void
+multicast_rpl_border_router_init(void)
+{
+  PROCESS_NAME(mcast_border_router_process);
+  process_start(&mcast_border_router_process, NULL);
+}
+/*---------------------------------------------------------------------------*/

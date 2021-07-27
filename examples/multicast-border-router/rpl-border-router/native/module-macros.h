@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
+ * Copyright (c) 2011, Swedish Institute of Computer Science.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,31 +25,19 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- * This file is part of the Contiki operating system.
  */
 
-/**
- * \file
- *      Erbium (Er) example project configuration.
- * \author
- *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
- */
+/* use a non-default network driver */
+#define NETSTACK_CONF_NETWORK sicslowpan_driver
 
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
+/* use a non-default MAC driver */
+#define NETSTACK_CONF_MAC border_router_mac_driver
 
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
-#include "../common-conf.h"
+#define SLIP_DEV_CONF_SEND_DELAY (CLOCK_SECOND / 32)
 
+#define SERIALIZE_ATTRIBUTES 1
 
-/*(1) Memory occupancy (RAM and ROM)(2) Time spent by the CPU to process incoming/outgoing messages(3) Time spent by the radio to transmit CoAP messages(4) Time spent by the radio to receive CoAP messages(5) Energy consumed by the CPU to process incoming/outgoing messages(6) Energy consumed by the radio to transmit CoAP responses(7) Energy consumed by the radio to receive CoAP requests(8)Round Trip Time experienced by the client, measured since the time the CoAP request is sent until the last CoAPresponse is received. */
+#define CMD_CONF_OUTPUT border_router_cmd_output
 
-
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-#ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_ESMRF
-#endif
-
-
-#endif /* PROJECT_CONF_H_ */
+/* used by wpcap (see /cpu/native/net/wpcap-drv.c) */
+#define SELECT_CALLBACK 1

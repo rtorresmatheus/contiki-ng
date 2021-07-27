@@ -11,4 +11,10 @@ CONTIKI=../../..
 include $(CONTIKI)/Makefile.dir-variables
 MODULES += $(CONTIKI_NG_APP_LAYER_DIR)/coap
 
+MAKE_ROUTING = MAKE_ROUTING_RPL_CLASSIC
+MODULES += os/net/routing/rpl-classic
+
+# Include the Multicast implementation
+MODULES += os/net/ipv6/multicast
+
 include $(CONTIKI)/Makefile.include

@@ -60,6 +60,11 @@
 #include "coap-keystore.h"
 #include "coap-keystore-simple.h"
 
+
+#include "contiki-net.h"
+#include "net/ipv6/multicast/uip-mcast6.h"
+
+
 /* Log configuration */
 #include "coap-log.h"
 #define LOG_MODULE "coap-uip"
@@ -477,11 +482,49 @@ coap_sendto(const coap_endpoint_t *ep, const uint8_t *data, uint16_t length)
   uip_udp_packet_sendto(udp_conn, data, length, &ep->ipaddr, ep->port);
   return length;
 }
+
+#if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
+static uip_ds6_maddr_t *
+join_mcast_group(void)
+{
+  uip_ipaddr_t addr;
+  uip_ds6_maddr_t *rv;
+  const uip_ipaddr_t *default_prefix = uip_ds6_default_prefix();
+
+  /* First, set our v6 global */
+  uip_ip6addr_copy(&addr, default_prefix);
+  uip_ds6_set_addr_iid(&addr, &uip_lladdr);
+  uip_ds6_addr_add(&addr, 0, ADDR_AUTOCONF);
+
+  /*
+   * IPHC will use stateless multicast compression for this destination
+   * (M=1, DAC=0), with 32 inline bits (1E 89 AB CD)
+   */
+  uip_ip6addr(&addr, 0xFF1E,0,0,0,0,0,0x89,0xABCD);
+  rv = uip_ds6_maddr_add(&addr);
+
+  if(rv) {
+    LOG_INFO("Joined multicast group ");
+    LOG_INFO_6ADDR(&uip_ds6_maddr_lookup(&addr)->ipaddr);
+    LOG_INFO("\n");
+  }
+  return rv;
+}
+#endif
+
+
+
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(coap_engine, ev, data)
 {
   PROCESS_BEGIN();
   /* new connection with remote host */
+#if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
+  if(join_mcast_group() == NULL) {
+    LOG_ERR("Failed to join multicast group\n");
+  }
+#endif
+
   udp_conn = udp_new(NULL, 0, NULL);
   udp_bind(udp_conn, SERVER_LISTEN_PORT);
   LOG_INFO("Listening on port %u\n", uip_ntohs(udp_conn->lport));

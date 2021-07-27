@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
+ * Copyright (c) 201, RISE SICS
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,29 +27,39 @@
  * SUCH DAMAGE.
  *
  * This file is part of the Contiki operating system.
+ *
  */
 
-/**
- * \file
- *      Erbium (Er) example project configuration.
- * \author
- *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
- */
-
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
-
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
-#include "../common-conf.h"
+#include "contiki.h"
+#include "rpl-border-router/rpl-border-router.h"
+//#include "rpl-border-router.h"
 
 
-/*(1) Memory occupancy (RAM and ROM)(2) Time spent by the CPU to process incoming/outgoing messages(3) Time spent by the radio to transmit CoAP messages(4) Time spent by the radio to receive CoAP messages(5) Energy consumed by the CPU to process incoming/outgoing messages(6) Energy consumed by the radio to transmit CoAP responses(7) Energy consumed by the radio to receive CoAP requests(8)Round Trip Time experienced by the client, measured since the time the CoAP request is sent until the last CoAPresponse is received. */
+/* Log configuration */
+#include "sys/log.h"
+#define LOG_MODULE "RPL BR"
+#define LOG_LEVEL LOG_LEVEL_INFO
 
-
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-#ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_ESMRF
+#if BUILD_WITH_RPL_BORDER_ROUTER
+#error "Incorrect configs!"
 #endif
 
+/* Declare and auto-start this file's process */
+PROCESS(contiki_ng_multicast_br, "Contiki-NG Multicast Border Router");
+AUTOSTART_PROCESSES(&contiki_ng_multicast_br);
 
-#endif /* PROJECT_CONF_H_ */
+/*---------------------------------------------------------------------------*/
+PROCESS_THREAD(contiki_ng_multicast_br, ev, data)
+{
+  PROCESS_BEGIN();
+
+  multicast_rpl_border_router_init();
+#if BORDER_ROUTER_CONF_WEBSERVER
+  PROCESS_NAME(webserver_nogui_process);
+  process_start(&webserver_nogui_process, NULL);
+#endif /* BORDER_ROUTER_CONF_WEBSERVER */
+
+  LOG_INFO("Contiki-NG Multicast Border Router started\n");
+
+  PROCESS_END();
+}
