@@ -223,9 +223,8 @@ rpl_parent_is_reachable(rpl_parent_t *p) {
     return 0;
   } else {
 #if UIP_ND6_SEND_NS
-    uip_ds6_nbr_t *nbr = rpl_get_nbr(p);
     /* Exclude links to a neighbor that is not reachable at a NUD level */
-    if(nbr == NULL || nbr->state != NBR_REACHABLE) {
+    if(rpl_get_nbr(p) == NULL) {
       return 0;
     }
 #endif /* UIP_ND6_SEND_NS */
@@ -886,12 +885,9 @@ best_parent(rpl_dag_t *dag, int fresh_only)
     }
 
 #if UIP_ND6_SEND_NS
-    {
-    uip_ds6_nbr_t *nbr = rpl_get_nbr(p);
     /* Exclude links to a neighbor that is not reachable at a NUD level */
-    if(nbr == NULL || nbr->state != NBR_REACHABLE) {
+    if(rpl_get_nbr(p) == NULL) {
       continue;
-    }
     }
 #endif /* UIP_ND6_SEND_NS */
 
@@ -1613,7 +1609,7 @@ rpl_process_dio(uip_ipaddr_t *from, rpl_dio_t *dio)
     }
   } else {
     if(p->rank == dio->rank) {
-      LOG_WARN("Received consistent DIO\n");
+      LOG_INFO("Received consistent DIO\n");
       if(dag->joined) {
         instance->dio_counter++;
       }

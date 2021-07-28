@@ -447,6 +447,14 @@ dio_input(void)
           goto discard;
         }
         dio.prefix_info.length = buffer[i + 2];
+
+        if(dio.prefix_info.length > sizeof(uip_ipaddr_t) * 8) {
+          LOG_WARN("Invalid DAG prefix info, len %u > %u\n",
+                   dio.prefix_info.length, (unsigned)(sizeof(uip_ipaddr_t) * 8));
+          RPL_STAT(rpl_stats.malformed_msgs++);
+          goto discard;
+        }
+
         dio.prefix_info.flags = buffer[i + 3];
         /* valid lifetime is ingnored for now - at i + 4 */
         /* preferred lifetime stored in lifetime */
@@ -1334,7 +1342,7 @@ dao_ack_input(void)
   } else if(RPL_IS_STORING(instance)) {
     /* this DAO ACK should be forwarded to another recently registered route */
     uip_ds6_route_t *re;
-    uip_ipaddr_t *nexthop;
+    const uip_ipaddr_t *nexthop;
     if((re = find_route_entry_by_dao_ack(sequence)) != NULL) {
       /* pick the recorded seq no from that node and forward DAO ACK - and
          clear the pending flag*/

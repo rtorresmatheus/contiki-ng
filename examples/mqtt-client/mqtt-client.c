@@ -306,7 +306,7 @@ echo_reply_handler(uip_ipaddr_t *source, uint8_t ttl, uint8_t *data,
                    uint16_t datalen)
 {
   if(uip_ip6addr_cmp(source, uip_ds6_defrt_choose())) {
-    def_rt_rssi = sicslowpan_get_last_rssi();
+    def_rt_rssi = (int)uipbuf_get_attr(UIPBUF_ATTR_RSSI);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -320,8 +320,8 @@ static void
 pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
             uint16_t chunk_len)
 {
-  LOG_DBG("Pub Handler: topic='%s' (len=%u), chunk_len=%u\n", topic,
-          topic_len, chunk_len);
+  LOG_DBG("Pub Handler: topic='%s' (len=%u), chunk_len=%u, chunk='%s'\n", topic,
+          topic_len, chunk_len, chunk);
 
   /* If we don't like the length, ignore */
   if(topic_len != 23 || chunk_len != 1) {

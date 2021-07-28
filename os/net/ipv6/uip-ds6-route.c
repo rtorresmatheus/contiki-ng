@@ -185,6 +185,21 @@ uip_ds6_route_init(void)
   list_init(notificationlist);
 #endif
 }
+/*---------------------------------------------------------------------------*/
+int
+uip_ds6_route_count_nexthop_neighbors(void)
+{
+#if (UIP_MAX_ROUTES != 0)
+  struct uip_ds6_route_neighbor_routes *entry;
+  int count = 0;
+  for(entry = nbr_table_head(nbr_routes); entry != NULL; entry = nbr_table_next(nbr_routes, entry)) {
+    count++;
+  }
+  return count;
+#else /* (UIP_MAX_ROUTES != 0) */
+  return 0;
+#endif /* (UIP_MAX_ROUTES != 0) */
+}
 #if (UIP_MAX_ROUTES != 0)
 /*---------------------------------------------------------------------------*/
 static uip_lladdr_t *
@@ -613,7 +628,6 @@ uip_ds6_defrt_add(const uip_ipaddr_t *ipaddr, unsigned long interval)
     return NULL;
   }
 
-  LOG_INFO("Add default\n");
   d = uip_ds6_defrt_lookup(ipaddr);
   if(d == NULL) {
     d = memb_alloc(&defaultroutermemb);
@@ -629,6 +643,9 @@ uip_ds6_defrt_add(const uip_ipaddr_t *ipaddr, unsigned long interval)
     }
 
     list_push(defaultrouterlist, d);
+  }
+  else {
+    LOG_INFO("Refreshing default\n");
   }
 
   uip_ipaddr_copy(&d->ipaddr, ipaddr);

@@ -48,8 +48,9 @@
 #include "net/routing/rpl-classic/rpl-private.h"
 #endif
 
-#define DEBUG DEBUG_PRINT
-#include "net/ipv6/uip-debug.h"
+#include "sys/log.h"
+#define LOG_MODULE "Orchestra"
+#define LOG_LEVEL  LOG_LEVEL_MAC
 
 /* A net-layer sniffer for packets sent and received */
 static void orchestra_packet_received(void);
@@ -162,6 +163,18 @@ orchestra_callback_new_time_source(const struct tsch_neighbor *old, const struct
 }
 /*---------------------------------------------------------------------------*/
 void
+orchestra_callback_root_node_updated(const linkaddr_t *root, uint8_t is_added)
+{
+  int i;
+
+  for(i = 0; i < NUM_RULES; i++) {
+    if(all_rules[i]->root_node_updated != NULL) {
+      all_rules[i]->root_node_updated(root, is_added);
+    }
+  }
+}
+/*---------------------------------------------------------------------------*/
+void
 orchestra_init(void)
 {
   int i;
@@ -171,10 +184,10 @@ orchestra_init(void)
   linkaddr_copy(&orchestra_parent_linkaddr, &linkaddr_null);
   /* Initialize all Orchestra rules */
   for(i = 0; i < NUM_RULES; i++) {
-    PRINTF("Orchestra: initializing rule %s (%u)\n", all_rules[i]->name, i);
+    LOG_INFO("Initializing rule %s (%u), size %d\n", all_rules[i]->name, i, all_rules[i]->slotframe_size);
     if(all_rules[i]->init != NULL) {
       all_rules[i]->init(i);
     }
   }
-  PRINTF("Orchestra: initialization done\n");
+  LOG_INFO("Initialization done\n");
 }
