@@ -51,6 +51,11 @@
 #include "net/ipv6/uip-debug.h"
 #include "net/routing/routing.h"
 
+/* Log configuration */
+#include "sys/log.h"
+#define LOG_MODULE "App"
+#define LOG_LEVEL LOG_LEVEL_APP
+
 #define MAX_PAYLOAD_LEN 120
 #define MCAST_SINK_UDP_PORT 3001 /* Host byte order */
 #define SEND_INTERVAL CLOCK_SECOND /* clock ticks */
@@ -78,14 +83,14 @@ multicast_send(void)
   uint32_t id;
 
   id = uip_htonl(seq_id);
-  memset(buf, 0, MAX_PAYLOAD_LEN);
+  memset(buf, id, MAX_PAYLOAD_LEN);
   memcpy(buf, &id, sizeof(seq_id));
 
-  PRINTF("Send to: ");
-  PRINT6ADDR(&mcast_conn->ripaddr);
-  PRINTF(" Remote Port %u,", uip_ntohs(mcast_conn->rport));
-  PRINTF(" (msg=0x%08"PRIx32")", uip_ntohl(*((uint32_t *)buf)));
-  PRINTF(" %lu bytes\n", (unsigned long)sizeof(id));
+  LOG_DBG("Send to: ");
+  LOG_DBG_6ADDR(&mcast_conn->ripaddr);
+  LOG_DBG(" Remote Port %u,", uip_ntohs(mcast_conn->rport));
+  LOG_DBG(" (msg=0x%08"PRIx32")", uip_ntohl(*((uint32_t *)buf)));
+  LOG_DBG(" %lu bytes\n", (unsigned long)sizeof(id));
 
   seq_id++;
   uip_udp_packet_send(mcast_conn, buf, sizeof(id));
@@ -118,7 +123,7 @@ PROCESS_THREAD(rpl_root_process, ev, data)
 
   PROCESS_BEGIN();
 
-  PRINTF("Multicast Engine: '%s'\n", UIP_MCAST6.name);
+  LOG_DBG("Multicast Engine: '%s'\n", UIP_MCAST6.name);
 
   NETSTACK_ROUTING.root_start();
 

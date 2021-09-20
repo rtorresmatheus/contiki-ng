@@ -50,6 +50,11 @@
 #define DEBUG DEBUG_PRINT
 #include "net/ipv6/uip-debug.h"
 
+/* Log configuration */
+#include "sys/log.h"
+#define LOG_MODULE "App"
+#define LOG_LEVEL LOG_LEVEL_APP
+
 #define MCAST_SINK_UDP_PORT 3001 /* Host byte order */
 
 static struct uip_udp_conn *sink_conn;
@@ -68,7 +73,7 @@ tcpip_handler(void)
 {
   if(uip_newdata()) {
     count++;
-    PRINTF("In: [0x%08lx], TTL %u, total %u\n",
+    LOG_DBG("In: [0x%08lx], TTL %u, total %u\n",
         (unsigned long)uip_ntohl((unsigned long) *((uint32_t *)(uip_appdata))),
         UIP_IP_BUF->ttl, count);
   }
@@ -96,9 +101,9 @@ join_mcast_group(void)
   rv = uip_ds6_maddr_add(&addr);
 
   if(rv) {
-    PRINTF("Joined multicast group ");
-    PRINT6ADDR(&uip_ds6_maddr_lookup(&addr)->ipaddr);
-    PRINTF("\n");
+    LOG_DBG("Joined multicast group ");
+    LOG_DBG_6ADDR(&uip_ds6_maddr_lookup(&addr)->ipaddr);
+    LOG_DBG("\n");
   }
   return rv;
 }
@@ -108,7 +113,7 @@ PROCESS_THREAD(mcast_sink_process, ev, data)
 {
   PROCESS_BEGIN();
 
-  PRINTF("Multicast Engine: '%s'\n", UIP_MCAST6.name);
+  LOG_DBG("Multicast Engine: '%s'\n", UIP_MCAST6.name);
 
   /*
    * MPL nodes are automatically configured to subscribe to the ALL_MPL_FORWARDERS
@@ -116,7 +121,7 @@ PROCESS_THREAD(mcast_sink_process, ev, data)
    */
 #if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
   if(join_mcast_group() == NULL) {
-    PRINTF("Failed to join multicast group\n");
+    LOG_DBG("Failed to join multicast group\n");
     PROCESS_EXIT();
   }
 #endif
@@ -126,9 +131,9 @@ PROCESS_THREAD(mcast_sink_process, ev, data)
   sink_conn = udp_new(NULL, UIP_HTONS(0), NULL);
   udp_bind(sink_conn, UIP_HTONS(MCAST_SINK_UDP_PORT));
 
-  PRINTF("Listening: ");
+  LOG_DBG("Listening: ");
   PRINT6ADDR(&sink_conn->ripaddr);
-  PRINTF(" local/remote port %u/%u\n",
+  LOG_DBG(" local/remote port %u/%u\n",
         UIP_HTONS(sink_conn->lport), UIP_HTONS(sink_conn->rport));
 
   while(1) {

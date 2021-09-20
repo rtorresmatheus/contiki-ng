@@ -43,9 +43,14 @@
 
 #include "net/ipv6/multicast/uip-mcast6-engines.h"
 
+#define LOG_LEVEL_APP           LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_DBG
+//#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_DBG
+//#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_DBG
+
 /* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
 #ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_MPL
+#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_SMRF
 #endif
 
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
