@@ -53,6 +53,7 @@
 
 #define MAX_PAYLOAD_LEN 120
 #define MCAST_SINK_UDP_PORT 3001 /* Host byte order */
+#define MCAST_ROOT_UDP_PORT 3010 /* Host byte order */
 #define SEND_INTERVAL CLOCK_SECOND /* clock ticks */
 #define ITERATIONS 100 /* messages */
 
@@ -61,8 +62,10 @@
 #define START_DELAY 60
 
 static struct uip_udp_conn * mcast_conn;
+static struct uip_udp_conn *response_conn;
 static char buf[MAX_PAYLOAD_LEN];
 static uint32_t seq_id;
+static uint16_t count;
 
 #if !NETSTACK_CONF_WITH_IPV6 || !UIP_CONF_ROUTER || !UIP_IPV6_MULTICAST || !UIP_CONF_IPV6_RPL
 #error "This example can not work with the current contiki configuration"
@@ -71,6 +74,19 @@ static uint32_t seq_id;
 /*---------------------------------------------------------------------------*/
 PROCESS(rpl_root_process, "RPL ROOT, Multicast Sender");
 AUTOSTART_PROCESSES(&rpl_root_process);
+
+/*---------------------------------------------------------------------------*/
+static void
+tcpip_handler(void)
+{
+  if(uip_newdata()) {
+    count++;
+    PRINTF("In: [0x%08lx], TTL %u, total %u\n",
+        (unsigned long)uip_ntohl((unsigned long) *((uint32_t *)(uip_appdata))),
+        UIP_IP_BUF->ttl, count);
+  }
+  return;
+}
 /*---------------------------------------------------------------------------*/
 static void
 multicast_send(void)
@@ -81,12 +97,11 @@ multicast_send(void)
   memset(buf, 0, MAX_PAYLOAD_LEN);
   memcpy(buf, &id, sizeof(seq_id));
 
-  PRINTF("Send to: ");
+  PRINTF("Send Multicast to: ");
   PRINT6ADDR(&mcast_conn->ripaddr);
   PRINTF(" Remote Port %u,", uip_ntohs(mcast_conn->rport));
   PRINTF(" (msg=0x%08"PRIx32")", uip_ntohl(*((uint32_t *)buf)));
   PRINTF(" %lu bytes\n", (unsigned long)sizeof(id));
-
   seq_id++;
   uip_udp_packet_send(mcast_conn, buf, sizeof(id));
 }
@@ -123,6 +138,9 @@ PROCESS_THREAD(rpl_root_process, ev, data)
   NETSTACK_ROUTING.root_start();
 
   prepare_mcast();
+  response_conn = udp_new(NULL, UIP_HTONS(0), NULL);
+  udp_bind(response_conn, UIP_HTONS(MCAST_ROOT_UDP_PORT));
+
 
   etimer_set(&et, START_DELAY * CLOCK_SECOND);
   while(1) {
@@ -134,6 +152,9 @@ PROCESS_THREAD(rpl_root_process, ev, data)
         multicast_send();
         etimer_set(&et, SEND_INTERVAL);
       }
+    }
+    if(ev == tcpip_event) {
+      tcpip_handler();
     }
   }
 
