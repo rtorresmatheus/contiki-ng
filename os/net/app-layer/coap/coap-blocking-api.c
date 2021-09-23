@@ -82,7 +82,7 @@ PT_THREAD(coap_blocking_request
   coap_request_state_t *state = &blocking_state->state;
 
   PT_BEGIN(&blocking_state->pt);
-
+printf("blocking API\n");
   state->block_num = 0;
   state->response = NULL;
   blocking_state->process = PROCESS_CURRENT();
@@ -106,7 +106,7 @@ PT_THREAD(coap_blocking_request
     if(context){
 	printf("OSCORE found!\n");
 	coap_set_oscore(request);
-	request->security_context = context;
+      request->security_context = context;
  	//TODO maybe an if and random token should be added here
 	uint8_t token[2] = {0xA, 0xA};
     	coap_set_token(request, token, 2);
@@ -115,7 +115,14 @@ PT_THREAD(coap_blocking_request
 	printf("URL %s \n", uri);
     }
     #endif /* WITH_OSCORE */
+    printf("about to create transaction\n");
+    #ifdef WITH_GROUPCOM
+    if((state->transaction = coap_new_transaction_with_token(request->mid, request->token, request->token_len, remote_ep))) {
+    #else 
     if((state->transaction = coap_new_transaction(request->mid, remote_ep))) {
+    #endif /* WITH_GROUPCOM */
+
+      printf("created new transaction in blocing-api\n");
       state->transaction->callback = coap_blocking_request_callback;
       state->transaction->callback_data = blocking_state;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Swedish Institute of Computer Science.
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,24 +25,43 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ * This file is part of the Contiki operating system.
  */
 
 /**
  * \file
- *         Sets up some commands for the border router
+ *      Erbium (Er) example project configuration.
  * \author
- *         Niclas Finne <nfi@sics.se>
- *         Joakim Eriksson <joakime@sics.se>
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef BORDER_ROUTER_CMDS_H_
-#define BORDER_ROUTER_CMDS_H_
+#ifndef PROJECT_CONF_H_
+#define PROJECT_CONF_H_
 
-#define CMD_CONTEXT_RADIO  0
-#define CMD_CONTEXT_STDIO  1
+#include "net/ipv6/multicast/uip-mcast6-engines.h"
 
-extern uint8_t command_context;
+/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
+#ifndef UIP_MCAST6_CONF_ENGINE
+#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_SMRF 
+#endif
 
-PROCESS_NAME(border_router_cmd_process);
+#define UIP_MCAST6_ROUTE_CONF_ROUTES 3
 
-#endif /* BORDER_ROUTER_CMDS_H_ */
+/* Code/RAM footprint savings so that things will fit on our device */
+#ifndef NETSTACK_MAX_ROUTE_ENTRIES
+#define NETSTACK_MAX_ROUTE_ENTRIES  3
+#endif
+
+#ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
+#define NBR_TABLE_CONF_MAX_NEIGHBORS 3 
+#endif
+
+#define REST_MAX_CHUNK_SIZE 230
+
+
+#define LOG_LEVEL_APP LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_TCPIP LOG_LEVEL_DBG
+
+#endif /* PROJECT_CONF_H_ */

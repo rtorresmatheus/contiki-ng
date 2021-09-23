@@ -69,11 +69,20 @@ typedef struct coap_transaction {
   coap_resource_response_handler_t callback;
   void *callback_data;
 
+#ifdef WITH_GROUPCOM
+  uint8_t token_len;
+  uint8_t token[COAP_TOKEN_LEN];
+#endif /* WITH_GROUPCOM */
+
   uint16_t message_len;
   uint8_t message[COAP_MAX_PACKET_SIZE + 1];     /* +1 for the terminating '\0' which will not be sent
                                                  * Use snprintf(buf, len+1, "", ...) to completely fill payload */
 } coap_transaction_t;
 
+#ifdef WITH_GROUPCOM
+coap_transaction_t *coap_new_transaction_with_token(uint16_t mid, uint8_t *token, uint8_t token_len, const coap_endpoint_t *ep);
+coap_transaction_t *coap_get_transaction_by_token(uint8_t *token, uint8_t token_len);
+#endif /* WITH_GROUPCOM */
 coap_transaction_t *coap_new_transaction(uint16_t mid, const coap_endpoint_t *ep);
 void coap_send_transaction(coap_transaction_t *t);
 void coap_clear_transaction(coap_transaction_t *t);

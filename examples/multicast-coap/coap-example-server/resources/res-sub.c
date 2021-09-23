@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Swedish Institute of Computer Science.
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,34 +26,45 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * This file is part of the Contiki operating system.
  */
 
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
+/**
+ * \file
+ *      Example resource
+ * \author
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
+ */
 
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
+#include <stdio.h>
+#include <string.h>
+#include "coap-engine.h"
 
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-#ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_ESMRF
-#endif
+static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-//#define RPL_CONF_MOP RPL_MOP_STORING_MULTICAST
+/*
+ * Example for a resource that also handles all its sub-resources.
+ * Use coap_get_url() to multiplex the handling of the request depending on the Uri-Path.
+ */
+PARENT_RESOURCE(res_sub,
+                "title=\"Sub-resource demo\"",
+                res_get_handler,
+                NULL,
+                NULL,
+                NULL);
 
+static void
+res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  coap_set_header_content_format(response, TEXT_PLAIN);
 
-#ifndef WEBSERVER_CONF_CFS_CONNS
-#define WEBSERVER_CONF_CFS_CONNS 2
-#endif
+  const char *uri_path = NULL;
+  int len = coap_get_header_uri_path(request, &uri_path);
+  int base_len = strlen(res_sub.url);
 
-#ifndef BORDER_ROUTER_CONF_WEBSERVER
-#define BORDER_ROUTER_CONF_WEBSERVER 0 
-#endif
-
-#define STACK_CHECK_CONF_ENABLED 0
-#if BORDER_ROUTER_CONF_WEBSERVER
-#define UIP_CONF_TCP 1
-#endif
-//force 2.4GHz/sub-GHz operation
-#define RF_CONF_MODE RF_MODE_2_4_GHZ//RF_MODE_SUB_1_GHZ
-
-#endif /* PROJECT_CONF_H_ */
+  if(len == base_len) {
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "Request any sub-resource of /%s", res_sub.url);
+  } else {
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, ".%.*s", len - base_len, uri_path + base_len);
+  } coap_set_payload(response, buffer, strlen((char *)buffer));
+}

@@ -288,7 +288,16 @@ coap_endpoint_is_secure(const coap_endpoint_t *ep)
 int
 coap_endpoint_is_connected(const coap_endpoint_t *ep)
 {
+#if WITH_GROUPCOM == 1
+  if(uip_is_addr_mcast_global(&ep->ipaddr)){
+    printf("Multicast message-> conencted addres TODO check address\n");
+    return 1;
+  }
+#endif /* WITH_GROUPCOM */
+
 #ifndef CONTIKI_TARGET_NATIVE
+  printf("connected debug uip_is_addr_linklocal(&ep->ipaddr) %d\n", uip_is_addr_linklocal(&ep->ipaddr));
+  printf("NETSTACK_ROUTING.node_is_reachable() %d\n", NETSTACK_ROUTING.node_is_reachable());
   if(!uip_is_addr_linklocal(&ep->ipaddr)
     && NETSTACK_ROUTING.node_is_reachable() == 0) {
     return 0;
@@ -519,15 +528,15 @@ PROCESS_THREAD(coap_engine, ev, data)
 {
   PROCESS_BEGIN();
   /* new connection with remote host */
-#if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
+#if (UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL) && (WITH_GROUPCOM == 1)
   if(join_mcast_group() == NULL) {
     LOG_ERR("Failed to join multicast group\n");
   }
-#endif
-
+#endif /* (UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL) && (MAKE_WITH_GROUPCOM == 1) */
   udp_conn = udp_new(NULL, 0, NULL);
   udp_bind(udp_conn, SERVER_LISTEN_PORT);
   LOG_INFO("Listening on port %u\n", uip_ntohs(udp_conn->lport));
+
 #ifdef WITH_DTLS
   /* create new context with app-data */
   dtls_conn = udp_new(NULL, 0, NULL);

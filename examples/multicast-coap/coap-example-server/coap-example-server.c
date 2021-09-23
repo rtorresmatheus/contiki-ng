@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 201, RISE SICS
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,39 +27,54 @@
  * SUCH DAMAGE.
  *
  * This file is part of the Contiki operating system.
- *
  */
 
-#include "contiki.h"
-#include "rpl-border-router/rpl-border-router.h"
-//#include "rpl-border-router.h"
+/**
+ * \file
+ *      Erbium (Er) CoAP Engine example.
+ * \author
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
+ */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "contiki.h"
+#include "coap-engine.h"
+#include "net/routing/routing.h"
 
 /* Log configuration */
 #include "sys/log.h"
-#define LOG_MODULE "RPL BR"
-#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_MODULE "App"
+#define LOG_LEVEL LOG_LEVEL_APP
+/*
+ * Resources to be activated need to be imported through the extern keyword.
+ * The build system automatically compiles the resources in the corresponding sub-directory.
+ */
+extern coap_resource_t
+  res_hello;
 
-#if BUILD_WITH_RPL_BORDER_ROUTER
-#error "Incorrect configs!"
-#endif
+PROCESS(er_example_server, "Erbium Example Server");
+AUTOSTART_PROCESSES(&er_example_server);
 
-/* Declare and auto-start this file's process */
-PROCESS(contiki_ng_multicast_br, "Contiki-NG Multicast Border Router");
-AUTOSTART_PROCESSES(&contiki_ng_multicast_br);
-
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(contiki_ng_multicast_br, ev, data)
+PROCESS_THREAD(er_example_server, ev, data)
 {
   PROCESS_BEGIN();
+  PROCESS_PAUSE();
 
-  multicast_rpl_border_router_init();
-#if BORDER_ROUTER_CONF_WEBSERVER
-  PROCESS_NAME(webserver_nogui_process);
-  process_start(&webserver_nogui_process, NULL);
-#endif /* BORDER_ROUTER_CONF_WEBSERVER */
+  LOG_INFO("Starting Erbium Example Server\n");
 
-  LOG_INFO("Contiki-NG Multicast Border Router started\n");
+  /*
+   * Bind the resources to their Uri-Path.
+   * WARNING: Activating twice only means alternate path, not two instances!
+   * All static variables are the same for each URI path.
+   */
+  coap_activate_resource(&res_hello, "test/hello");
+
+  /* Define application-specific events here. */
+  while(1) {
+    PROCESS_WAIT_EVENT();
+  }                             /* while (1) */
 
   PROCESS_END();
 }

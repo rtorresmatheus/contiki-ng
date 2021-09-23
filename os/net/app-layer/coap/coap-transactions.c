@@ -58,7 +58,7 @@ MEMB(transactions_memb, coap_transaction_t, COAP_MAX_OPEN_TRANSACTIONS);
 LIST(transactions_list);
 
 /*---------------------------------------------------------------------------*/
-static void
+  static void
 coap_retransmit_transaction(coap_timer_t *nt)
 {
   coap_transaction_t *t = coap_timer_get_user_data(nt);
@@ -75,7 +75,7 @@ coap_retransmit_transaction(coap_timer_t *nt)
 /*---------------------------------------------------------------------------*/
 /*- Internal API ------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-coap_transaction_t *
+  coap_transaction_t *
 coap_new_transaction(uint16_t mid, const coap_endpoint_t *endpoint)
 {
   coap_transaction_t *t = memb_alloc(&transactions_memb);
@@ -93,13 +93,34 @@ coap_new_transaction(uint16_t mid, const coap_endpoint_t *endpoint)
   return t;
 }
 /*---------------------------------------------------------------------------*/
-void
+#ifdef WITH_GROUPCOM
+  coap_transaction_t * 
+coap_new_transaction_with_token(uint16_t mid, uint8_t *token, uint8_t token_len, const coap_endpoint_t *endpoint)
+{
+  coap_transaction_t *t = memb_alloc(&transactions_memb);
+
+  if(t) {
+    t->mid = mid; 
+    t->retrans_counter = 0;
+    memcpy(t->token, token, token_len);
+    t->token_len = token_len;
+    /* save client address */
+    coap_endpoint_copy(&t->endpoint, endpoint);
+
+    list_add(transactions_list, t); /* list itself makes sure same element is not added twice */
+  }
+
+  return t;
+}
+#endif /* WITH_GROUPCOM */
+/*---------------------------------------------------------------------------*/
+  void
 coap_send_transaction(coap_transaction_t *t)
 {
   LOG_DBG("Sending transaction %u\n", t->mid);
 
   if(COAP_TYPE_CON ==
-     ((COAP_HEADER_TYPE_MASK & t->message[0]) >> COAP_HEADER_TYPE_POSITION)) {
+      ((COAP_HEADER_TYPE_MASK & t->message[0]) >> COAP_HEADER_TYPE_POSITION)) {
     if(t->retrans_counter <= COAP_MAX_RETRANSMIT) {
       /* not timed out yet */
       coap_sendto(&t->endpoint, t->message, t->message_len);
@@ -110,13 +131,13 @@ coap_send_transaction(coap_transaction_t *t)
         coap_timer_set_user_data(&t->retrans_timer, t);
         t->retrans_interval =
           COAP_RESPONSE_TIMEOUT_TICKS + (rand() %
-                                         COAP_RESPONSE_TIMEOUT_BACKOFF_MASK);
+              COAP_RESPONSE_TIMEOUT_BACKOFF_MASK);
         LOG_DBG("Initial interval %lu msec\n",
-                (unsigned long)t->retrans_interval);
+            (unsigned long)t->retrans_interval);
       } else {
         t->retrans_interval <<= 1;  /* double */
         LOG_DBG("Doubled (%u) interval %lu s\n", t->retrans_counter,
-                (unsigned long)(t->retrans_interval / 1000));
+            (unsigned long)(t->retrans_interval / 1000));
       }
 
       /* interval updated above */
@@ -136,13 +157,57 @@ coap_send_transaction(coap_transaction_t *t)
         callback(callback_data, NULL);
       }
     }
+#ifndef WITH_GROUPCOM
   } else {
+    printf("not CON\n");
     coap_sendto(&t->endpoint, t->message, t->message_len);
     coap_clear_transaction(t);
   }
+#else /* WITH_GROUPCOM */ 
+  } else if (COAP_TYPE_NON ==
+      ((COAP_HEADER_TYPE_MASK & t->message[0]) >> COAP_HEADER_TYPE_POSITION)) { 
+    if(t->retrans_counter <= COAP_MAX_RETRANSMIT) { //Always true on first call
+      coap_sendto(&t->endpoint, t->message, t->message_len);
+      LOG_DBG("Keeping NON transaction %u\n", t->mid);
+
+      if(t->retrans_counter == 0) { 
+        coap_timer_set_callback(&t->retrans_timer, coap_retransmit_transaction);
+        coap_timer_set_user_data(&t->retrans_timer, t);
+        t->retrans_interval =
+          COAP_RESPONSE_TIMEOUT_TICKS + (rand() %
+              COAP_RESPONSE_TIMEOUT_BACKOFF_MASK);
+        LOG_DBG("Initial interval %lu msec\n",
+            (unsigned long)t->retrans_interval);
+      }
+      t->retrans_counter = COAP_MAX_RETRANSMIT; //Cheeky hack
+      // interval updated above
+      coap_timer_set(&t->retrans_timer, t->retrans_interval);
+    } else {
+      // timed out 
+      LOG_DBG("Timeout\n");
+      coap_resource_response_handler_t callback = t->callback;
+      void *callback_data = t->callback_data;
+
+      // handle observers 
+      coap_remove_observer_by_client(&t->endpoint);
+
+      //only if multicast
+      coap_clear_transaction(t); 
+
+      if(callback) {
+        callback(callback_data, NULL);
+      }
+    }
+
+  } else {
+    printf("not CON\n");
+    coap_sendto(&t->endpoint, t->message, t->message_len);
+    coap_clear_transaction(t);
+  }
+#endif /* WITH_GROUPCOM */
 }
 /*---------------------------------------------------------------------------*/
-void
+  void
 coap_clear_transaction(coap_transaction_t *t)
 {
   if(t) {
@@ -154,7 +219,7 @@ coap_clear_transaction(coap_transaction_t *t)
   }
 }
 /*---------------------------------------------------------------------------*/
-coap_transaction_t *
+  coap_transaction_t *
 coap_get_transaction_by_mid(uint16_t mid)
 {
   coap_transaction_t *t = NULL;
@@ -167,5 +232,25 @@ coap_get_transaction_by_mid(uint16_t mid)
   }
   return NULL;
 }
+/*---------------------------------------------------------------------------*/
+#ifdef WITH_GROUPCOM
+  coap_transaction_t *
+coap_get_transaction_by_token(uint8_t *token, uint8_t token_len)
+{
+  coap_transaction_t *t = NULL;
+
+  for(t = (coap_transaction_t *)list_head(transactions_list); t; t = t->next) {
+    if(t->token_len == token_len){ 
+      if(memcmp(t->token, token, token_len) == 0) {
+        LOG_DBG("Found transaction for Token %02X %02X Token-len %d: %p\n", t->token[0], t->token[1], t->token_len, t);
+        return t;
+      }
+    }
+  }
+  return NULL;
+}
+#endif /* WITH_GROUPCOM */
+
+
 /*---------------------------------------------------------------------------*/
 /** @} */

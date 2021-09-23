@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Swedish Institute of Computer Science.
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,19 +25,38 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ * This file is part of the Contiki operating system.
  */
 
-/* use a non-default network driver */
-#define NETSTACK_CONF_NETWORK sicslowpan_driver
+/**
+ * \file
+ *      Example resource
+ * \author
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
+ */
 
-/* use a non-default MAC driver */
-#define NETSTACK_CONF_MAC border_router_mac_driver
+#include "contiki.h"
+#include "coap-engine.h"
+#include "dev/leds.h"
 
-#define SLIP_DEV_CONF_SEND_DELAY (CLOCK_SECOND / 32)
+#include <string.h>
 
-#define SERIALIZE_ATTRIBUTES 1
+#if PLATFORM_HAS_LEDS || LEDS_COUNT
 
-#define CMD_CONF_OUTPUT border_router_cmd_output
+static void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-/* used by wpcap (see /cpu/native/net/wpcap-drv.c) */
-#define SELECT_CALLBACK 1
+/* A simple actuator example. Toggles the red led */
+RESOURCE(res_toggle,
+         "title=\"Red LED\";rt=\"Control\"",
+         NULL,
+         res_post_handler,
+         NULL,
+         NULL);
+
+static void
+res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  leds_toggle(LEDS_RED);
+}
+#endif /* PLATFORM_HAS_LEDS */

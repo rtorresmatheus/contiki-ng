@@ -71,16 +71,16 @@ static struct ctimer dr_timer;
 /*Callback function to actually send the delayed response*/
 void send_delayed_response_callback(void *data)
 {
- uint16_t *mid_;
- coap_transaction_t *trans;
- mid_ = (uint16_t *) data;
- if((trans = coap_get_transaction_by_mid(*mid_))) {
-   LOG_DBG("Transaction found! Sending...\n");
-   coap_send_transaction(trans);
-   ctimer_stop(&dr_timer);
- } else {
-   LOG_DBG("No transaction found, no response will be sent...\n");
- }
+  uint16_t *mid_;
+  coap_transaction_t *trans;
+  mid_ = (uint16_t *) data;
+  if((trans = coap_get_transaction_by_mid(*mid_))) {
+    LOG_DBG("Transaction found! Sending...\n");
+    coap_send_transaction(trans);
+    ctimer_stop(&dr_timer);
+  } else {
+    LOG_DBG("No transaction found, no response will be sent...\n");
+  }
 }
 /*---------------------------------------------------------------------------*/
 #endif /*WITH_GROUPCOM*/
@@ -92,9 +92,9 @@ static void process_callback(coap_timer_t *t);
  * request appears.  This function dispatches the corresponding CoAP service.
  */
 static int invoke_coap_resource_service(coap_message_t *request,
-                                        coap_message_t *response,
-                                        uint8_t *buffer, uint16_t buffer_size,
-                                        int32_t *offset);
+    coap_message_t *response,
+    uint8_t *buffer, uint16_t buffer_size,
+    int32_t *offset);
 
 /*---------------------------------------------------------------------------*/
 /*- Variables ---------------------------------------------------------------*/
@@ -106,21 +106,21 @@ static uint8_t is_initialized = 0;
 /*---------------------------------------------------------------------------*/
 /*- CoAP service handlers---------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-void
+  void
 coap_add_handler(coap_handler_t *handler)
 {
   list_add(coap_handlers, handler);
 }
 /*---------------------------------------------------------------------------*/
-void
+  void
 coap_remove_handler(coap_handler_t *handler)
 {
   list_remove(coap_handlers, handler);
 }
 /*---------------------------------------------------------------------------*/
-coap_handler_status_t
+  coap_handler_status_t
 coap_call_handlers(coap_message_t *request, coap_message_t *response,
-                      uint8_t *buffer, uint16_t buffer_size, int32_t *offset)
+    uint8_t *buffer, uint16_t buffer_size, int32_t *offset)
 {
   coap_handler_status_t status;
   coap_handler_t *r;
@@ -142,9 +142,9 @@ coap_call_handlers(coap_message_t *request, coap_message_t *response,
   return COAP_HANDLER_STATUS_CONTINUE;
 }
 /*---------------------------------------------------------------------------*/
-static CC_INLINE coap_handler_status_t
+  static CC_INLINE coap_handler_status_t
 call_service(coap_message_t *request, coap_message_t *response,
-             uint8_t *buffer, uint16_t buffer_size, int32_t *offset)
+    uint8_t *buffer, uint16_t buffer_size, int32_t *offset)
 {
   coap_handler_status_t status;
   status = coap_call_handlers(request, response, buffer, buffer_size, offset);
@@ -174,18 +174,16 @@ extern coap_resource_t res_well_known_core;
 /*Only capture the data and start the signature verification*/
 coap_status_t coap_receive(uint8_t *payload, uint16_t payload_length, coap_message_t *message)
 {
-	LOG_DBG("Coap_receive: calling coap_parse for initial processing...\n");
-	return coap_parse_message(message, payload, payload_length);
+  LOG_DBG("Coap_receive: calling coap_parse for initial processing...\n");
+  return coap_parse_message(message, payload, payload_length);
 }
 /*---------------------------------------------------------------------------*/
 /*This function can only be called after the signature verification has finished*/
-int
-coap_receive_cont(const coap_endpoint_t *src,
-             uint8_t *payload, uint16_t payload_length, uint8_t is_mcast, uint8_t verify_res, coap_status_t in_status, coap_message_t *msg, coap_message_t *response)
+int coap_receive_cont(const coap_endpoint_t *src,
+    uint8_t *payload, uint16_t payload_length, uint8_t is_mcast, uint8_t verify_res, coap_status_t in_status, coap_message_t *msg, coap_message_t *response)
 #else
-int
-coap_receive(const coap_endpoint_t *src,
-		uint8_t *payload, uint16_t payload_length, uint8_t is_mcast)
+int coap_receive(const coap_endpoint_t *src,
+    uint8_t *payload, uint16_t payload_length, uint8_t is_mcast)
 #endif /*WITH_GROUPCOM && WITH_OSCORE*/
 {
   /* static declaration reduces stack peaks and program code size */
@@ -205,8 +203,8 @@ coap_receive(const coap_endpoint_t *src,
 #ifdef OSCORE_WITH_HW_CRYPTO
 #ifdef CONTIKI_TARGET_ZOUL
   if(verify_res != 0) {
-	  LOG_DBG("The ECC verification failed with the following code: %u", verify_res);
-	  coap_status_code = OSCORE_DECRYPTION_ERROR;
+    LOG_DBG("The ECC verification failed with the following code: %u", verify_res);
+    coap_status_code = OSCORE_DECRYPTION_ERROR;
   }
 #endif /*CONTIKI_TARGET_ZOUL*/
 #endif /*OSCORE_WITH_HW_CRYPTO*/
@@ -217,7 +215,7 @@ coap_receive(const coap_endpoint_t *src,
   if(coap_status_code == NO_ERROR) {
     /*TODO duplicates suppression, if required by application */
     LOG_DBG("  Parsed: v %u, t %u, tkl %u, c %u, mid %u\n", message->version,
-            message->type, message->token_len, message->code, message->mid);
+        message->type, message->token_len, message->code, message->mid);
     LOG_DBG("  URL:");
     LOG_DBG_COAP_STRING(message->uri_path, message->uri_path_len);
     LOG_DBG_("\n");
@@ -225,60 +223,64 @@ coap_receive(const coap_endpoint_t *src,
     LOG_DBG_COAP_STRING((const char *)message->payload, message->payload_len);
     LOG_DBG_("\n");
     LOG_DBG("  Payload length: %d\n", message->payload_len);
-   
-/*Server responses have NULL STR, so for client mcast check is not needed*/
-  if(message->uri_path) {
-  
-    /*The flags to check if a multicast resource is requested*/
-    is_multicast = (strncmp(message->uri_path, multicast_path, strlen(multicast_path)) == 0 );
 
-    /*If requesting an unicast resource with a multicast address, or vice versa, ignore*/
-    if(is_mcast && !is_multicast ) {
-      	LOG_DBG("Cannot request unicast resouces with multicast address! Ignoring...\n");
-	return 0;
-    } else if(!is_mcast && is_multicast) {
-       LOG_DBG("Cannot request multicast resource with unicast address! Ignoring...\n");
-       return 0;
+    /*Server responses have NULL STR, so for client mcast check is not needed*/
+    if(message->uri_path) {
+
+      /*The flags to check if a multicast resource is requested*/
+      is_multicast = (strncmp(message->uri_path, multicast_path, strlen(multicast_path)) == 0 );
+
+      /*If requesting an unicast resource with a multicast address, or vice versa, ignore*/
+      if(is_mcast && !is_multicast ) {
+        LOG_DBG("Cannot request unicast resouces with multicast address! Ignoring...\n");
+        return 0;
+      } else if(!is_mcast && is_multicast) {
+        LOG_DBG("Cannot request multicast resource with unicast address! Ignoring...\n");
+        return 0;
+      }
+    } else {
+      LOG_DBG("A client receiving a response, no mcast check.\n");
     }
-  } else {
-	  LOG_DBG("A client receiving a response, no mcast check.\n");
-  }
-  /* handle requests */
-  if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
+    /* handle requests */
+    if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
       /* use transaction buffer for response to confirmable request */
+      printf("create message before create transaction\n");
       if((transaction = coap_new_transaction(message->mid, src))) {
-  	uint32_t block_num = 0;
+        printf("creating new transaction\n");
+        uint32_t block_num = 0;
         uint16_t block_size = COAP_MAX_BLOCK_SIZE;
         uint32_t block_offset = 0;
         int32_t new_offset = 0;
         /* prepare response */
         if(message->type == COAP_TYPE_CON) {
           /* reliable CON requests are answered with an ACK */
+          printf("message type CON\n");
           coap_init_message(response, COAP_TYPE_ACK, CONTENT_2_05,
-                            message->mid);
+              message->mid);
         } else {
           /* unreliable NON requests are answered with a NON as well */
-            coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
-                              coap_get_mid());
+          printf("message type NON\n");
+          coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
+              coap_get_mid());
         }
 #ifdef WITH_OSCORE 
-	if(coap_is_option(message, COAP_OPTION_OSCORE)) {
-	  coap_set_oscore(response);
-	  if(message->security_context == NULL) {
-		  LOG_DBG("context is NULL\n");
-	  }
+        if(coap_is_option(message, COAP_OPTION_OSCORE)) {
+          coap_set_oscore(response);
+          if(message->security_context == NULL) {
+            LOG_DBG("context is NULL\n");
+          }
           response->security_context = message->security_context;
         }
 #endif /* WITH_OSCORE */
-	/* mirror token */
+        /* mirror token */
         if(message->token_len) {
           coap_set_token(response, message->token, message->token_len);
           /* get offset for blockwise transfers */
         }
         if(coap_get_header_block2
-           (message, &block_num, NULL, &block_size, &block_offset)) {
+            (message, &block_num, NULL, &block_size, &block_offset)) {
           LOG_DBG("Blockwise: block request %"PRIu32" (%u/%u) @ %"PRIu32" bytes\n",
-                  block_num, block_size, COAP_MAX_BLOCK_SIZE, block_offset);
+              block_num, block_size, COAP_MAX_BLOCK_SIZE, block_offset);
           block_size = MIN(block_size, COAP_MAX_BLOCK_SIZE);
           new_offset = block_offset;
         }
@@ -290,103 +292,101 @@ coap_receive(const coap_endpoint_t *src,
           status = COAP_HANDLER_STATUS_CONTINUE;
         } else {
           /* call CoAP framework and check if found and allowed */
-	  status = call_service(message, response,
-                                transaction->message + COAP_MAX_HEADER_SIZE,
-                                block_size, &new_offset);
+          status = call_service(message, response,
+              transaction->message + COAP_MAX_HEADER_SIZE,
+              block_size, &new_offset);
         }
 
         if(status != COAP_HANDLER_STATUS_CONTINUE) {
 
-            if(coap_status_code == NO_ERROR) {
-
-              /* TODO coap_handle_blockwise(request, response, start_offset, end_offset); */
-
-              /* resource is unaware of Block1 */
-              if(coap_is_option(message, COAP_OPTION_BLOCK1)
-                 && response->code < BAD_REQUEST_4_00
-                 && !coap_is_option(response, COAP_OPTION_BLOCK1)) {
-                LOG_DBG("Block1 NOT IMPLEMENTED\n");
-
-                coap_status_code = NOT_IMPLEMENTED_5_01;
-                coap_error_message = "NoBlock1Support";
-
-                /* client requested Block2 transfer */
-              } else if(coap_is_option(message, COAP_OPTION_BLOCK2)) {
-
-                /* unchanged new_offset indicates that resource is unaware of blockwise transfer */
-                if(new_offset == block_offset) {
-                  LOG_DBG("Blockwise: unaware resource with payload length %u/%u\n",
-                          response->payload_len, block_size);
-                  if(block_offset >= response->payload_len) {
-                    LOG_DBG("handle_incoming_data(): block_offset >= response->payload_len\n");
-
-                    response->code = BAD_OPTION_4_02;
-                    coap_set_payload(response, "BlockOutOfScope", 15); /* a const char str[] and sizeof(str) produces larger code size */
-                  } else {
-                    coap_set_header_block2(response, block_num,
-                                           response->payload_len -
-                                           block_offset > block_size,
-                                           block_size);
-                    coap_set_payload(response,
-                                     response->payload + block_offset,
-                                     MIN(response->payload_len -
-                                         block_offset, block_size));
-                  } /* if(valid offset) */
-
-                  /* resource provides chunk-wise data */
-                } else {
-                  LOG_DBG("Blockwise: blockwise resource, new offset %"PRId32"\n",
-                          new_offset);
-                  coap_set_header_block2(response, block_num,
-                                         new_offset != -1
-                                         || response->payload_len >
-                                         block_size, block_size);
-
-                  if(response->payload_len > block_size) {
-                    coap_set_payload(response, response->payload,
-                                     block_size);
-                  }
-                } /* if(resource aware of blockwise) */
-
-                /* Resource requested Block2 transfer */
-              } else if(new_offset != 0) {
-                LOG_DBG("Blockwise: no block option for blockwise resource, using block size %u\n",
-                        COAP_MAX_BLOCK_SIZE);
-
-                coap_set_header_block2(response, 0, new_offset != -1,
-                                       COAP_MAX_BLOCK_SIZE);
-                coap_set_payload(response, response->payload,
-                                 MIN(response->payload_len,
-                                     COAP_MAX_BLOCK_SIZE));
-              } /* blockwise transfer handling */
-            } /* no errors/hooks */
-            /* successful service callback */
-            /* serialize response */
-        }
           if(coap_status_code == NO_ERROR) {
+            /* TODO coap_handle_blockwise(request, response, start_offset, end_offset); */
+
+            /* resource is unaware of Block1 */
+            if(coap_is_option(message, COAP_OPTION_BLOCK1)
+                && response->code < BAD_REQUEST_4_00
+                && !coap_is_option(response, COAP_OPTION_BLOCK1)) {
+              LOG_DBG("Block1 NOT IMPLEMENTED\n");
+
+              coap_status_code = NOT_IMPLEMENTED_5_01;
+              coap_error_message = "NoBlock1Support";
+
+              /* client requested Block2 transfer */
+            } else if(coap_is_option(message, COAP_OPTION_BLOCK2)) {
+
+              /* unchanged new_offset indicates that resource is unaware of blockwise transfer */
+              if(new_offset == block_offset) {
+                LOG_DBG("Blockwise: unaware resource with payload length %u/%u\n",
+                    response->payload_len, block_size);
+                if(block_offset >= response->payload_len) {
+                  LOG_DBG("handle_incoming_data(): block_offset >= response->payload_len\n");
+
+                  response->code = BAD_OPTION_4_02;
+                  coap_set_payload(response, "BlockOutOfScope", 15); /* a const char str[] and sizeof(str) produces larger code size */
+                } else {
+                  coap_set_header_block2(response, block_num,
+                      response->payload_len -
+                      block_offset > block_size,
+                      block_size);
+                  coap_set_payload(response,
+                      response->payload + block_offset,
+                      MIN(response->payload_len -
+                        block_offset, block_size));
+                } /* if(valid offset) */
+
+                /* resource provides chunk-wise data */
+              } else {
+                LOG_DBG("Blockwise: blockwise resource, new offset %"PRId32"\n",
+                    new_offset);
+                coap_set_header_block2(response, block_num,
+                    new_offset != -1
+                    || response->payload_len >
+                    block_size, block_size);
+
+                if(response->payload_len > block_size) {
+                  coap_set_payload(response, response->payload,
+                      block_size);
+                }
+              } /* if(resource aware of blockwise) */
+
+              /* Resource requested Block2 transfer */
+            } else if(new_offset != 0) {
+              LOG_DBG("Blockwise: no block option for blockwise resource, using block size %u\n",
+                  COAP_MAX_BLOCK_SIZE);
+
+              coap_set_header_block2(response, 0, new_offset != -1,
+                  COAP_MAX_BLOCK_SIZE);
+              coap_set_payload(response, response->payload,
+                  MIN(response->payload_len,
+                    COAP_MAX_BLOCK_SIZE));
+            } /* blockwise transfer handling */
+          } /* no errors/hooks */
+          /* successful service callback */
+          /* serialize response */
+        }
+        if(coap_status_code == NO_ERROR) {
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
-		/*start the signing process and return.*/
-		size_t prepare_out = oscore_prepare_message(response, transaction->message);
-		if(prepare_out == PACKET_SERIALIZATION_ERROR) {
-			coap_status_code = PACKET_SERIALIZATION_ERROR;
-		} else if(prepare_out == NO_ERROR) {
-			LOG_DBG("Message prepared, signing in progress. Returning for now...\n");
-			return 0;
-		}
-#else
-            if((transaction->message_len = 
-		   coap_serialize_message(response, transaction->message)) == 0) {
-              coap_status_code = PACKET_SERIALIZATION_ERROR;
-            }
-#endif /*WITH_GROUPCOM*/
+          /*start the signing process and return.*/
+          size_t prepare_out = oscore_prepare_message(response, transaction->message);
+          if(prepare_out == PACKET_SERIALIZATION_ERROR) {
+            coap_status_code = PACKET_SERIALIZATION_ERROR;
+          } else if(prepare_out == NO_ERROR) {
+            LOG_DBG("Message prepared, signing in progress. Returning for now...\n");
+            return 0;
           }
+#else
+          if((transaction->message_len = 
+                coap_serialize_message(response, transaction->message)) == 0) {
+            coap_status_code = PACKET_SERIALIZATION_ERROR;
+          }
+#endif /*WITH_GROUPCOM*/
+        }
       } else {
         coap_status_code = SERVICE_UNAVAILABLE_5_03;
-	coap_error_message = "NoFreeTraBuffer";
+        coap_error_message = "NoFreeTraBuffer";
       } /* if(transaction buffer) */
 
-      /* handle responses */
-    } else {
+    } else { /* handle responses */
 
       if(message->type == COAP_TYPE_CON && message->code == 0) {
         LOG_INFO("Received Ping\n");
@@ -399,26 +399,35 @@ coap_receive(const coap_endpoint_t *src,
         /* cancel possible subscriptions */
         coap_remove_observer_by_mid(src, message->mid);
       }
-
+      printf("here?\n");
       if((transaction = coap_get_transaction_by_mid(message->mid))) {
         /* free transaction memory before callback, as it may create a new transaction */
         coap_resource_response_handler_t callback = transaction->callback;
         void *callback_data = transaction->callback_data;
-
         coap_clear_transaction(transaction);
-
         /* check if someone registered for the response */
         if(callback) {
           callback(callback_data, message);
         }
-      }
+      } else if((transaction = coap_get_transaction_by_token(message->token, message->token_len))) {
+        /* free transaction memory before callback, as it may create a new transaction */
+        coap_resource_response_handler_t callback = transaction->callback;
+        void *callback_data = transaction->callback_data;
+        coap_clear_transaction(transaction); //TODO remove this
+        /* check if someone registered for the response */
+        if(callback) {
+          callback(callback_data, message);
+        }
+      } else {
+        printf("found no transactyion\n");
+      } 
       /* if(ACKed transaction) */
       transaction = NULL;
 
 #if COAP_OBSERVE_CLIENT
       /* if observe notification */
       if((message->type == COAP_TYPE_CON || message->type == COAP_TYPE_NON)
-         && coap_is_option(message, COAP_OPTION_OBSERVE)) {
+          && coap_is_option(message, COAP_OPTION_OBSERVE)) {
         LOG_DBG("Observe [%"PRId32"]\n", message->observe);
         coap_handle_notification(src, message);
       }
@@ -426,63 +435,63 @@ coap_receive(const coap_endpoint_t *src,
     } /* request or response */
   } /* parsed correctly */
 
-    /* if(parsed correctly) */
+  /* if(parsed correctly) */
   if(coap_status_code == NO_ERROR) {
     if(transaction) {
 
 #ifdef WITH_GROUPCOM
-/* Eval printouts for Group-CoAP */
+      /* Eval printouts for Group-CoAP */
 #if defined WITH_GROUPCOM && WITH_OSCORE == 0
 #if defined PROCESSING_TIME
-        serializing_time_e = RTIMER_NOW();
-        printf("s:%lu;\n", (serializing_time_e - serializing_time_s));
+      serializing_time_e = RTIMER_NOW();
+      printf("s:%lu;\n", (serializing_time_e - serializing_time_s));
 #endif /* defined PROCESSING_TIME */
 #ifdef OTII_ENERGY
-	printf("D\n");
+      printf("D\n");
 #endif /* OTII_ENERGY */
 #endif /* WITH_GROUPCOM && WITH_OSCORE == 0 */
 
       if(is_mcast) {
         /*Copy transport data to a timer data. The response will be sent at timer expiration.*/
 #if COAP_GROUPCOM_DELAY == 0 
-      uint16_t delay_time = 1; //TEMP small delay maybe 0 ticks wont work 
+        uint16_t delay_time = 1; //TEMP small delay maybe 0 ticks wont work 
 #elif COAP_GROUPCOM_DELAY != 0
-      uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY_MILLIS * CLOCK_SECOND)); 
+        uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY_MILLIS * CLOCK_SECOND)); 
 #endif /* COAP_GROUPCOM_DELAY */
-	 LOG_DBG("Scheduling delayed response after %d ticks...\n", delay_time);
+        LOG_DBG("Scheduling delayed response after %d ticks...\n", delay_time);
         dr_mid = message->mid;
-	ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);
+        ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);
       } else {
         LOG_DBG("No groupcom, running coap_send_transation...\n");    
         coap_send_transaction(transaction);
       }
 #else   /* No WITH_GROUPCOM */
-	#if defined PROCESSING_TIME
-        serializing_time_e = RTIMER_NOW();
-        printf("s:%lu; ", (serializing_time_e - serializing_time_s));
-        #if defined WITH_OSCORE && !(defined WITH_GROUPCOM)
-        printf("e:%lu; ", (encryption_time_e - encryption_time_s));
-        #endif /* WITH_OSCORE */
-        printf("\n");
-        #endif /* PROCESSING_TIME */
-	#ifdef OTII_ENERGY
-	printf("D\n");
-	#endif /* OTII_ENERGY */
-	coap_send_transaction(transaction);
+#if defined PROCESSING_TIME
+      serializing_time_e = RTIMER_NOW();
+      printf("s:%lu; ", (serializing_time_e - serializing_time_s));
+#if defined WITH_OSCORE && !(defined WITH_GROUPCOM)
+      printf("e:%lu; ", (encryption_time_e - encryption_time_s));
+#endif /* WITH_OSCORE */
+      printf("\n");
+#endif /* PROCESSING_TIME */
+#ifdef OTII_ENERGY
+      printf("D\n");
+#endif /* OTII_ENERGY */
+      coap_send_transaction(transaction);
 #endif /*WITH_GROUPCOM*/
-        
-          }
+
+    }
   } else if(coap_status_code == MANUAL_RESPONSE) {
     LOG_DBG("Clearing transaction for manual response");
     coap_clear_transaction(transaction);
   } else if(coap_status_code == OSCORE_DECRYPTION_ERROR) {
     LOG_WARN("OSCORE response decryption failed!\n");
     coap_transaction_t *t = coap_get_transaction_by_mid(message->mid);
-    
+
     /* free transaction memory before callback, as it may create a new transaction */
     coap_resource_response_handler_t callback = t->callback;
     void *callback_data = t->callback_data;
-    
+
     message->code = OSCORE_DECRYPTION_ERROR;
     coap_clear_transaction(t);
     LOG_DBG("TODO send empty ACK!\n");
@@ -490,7 +499,7 @@ coap_receive(const coap_endpoint_t *src,
     if(callback) {
       callback(callback_data, message);
     }
-    
+
     return coap_status_code;
   } else {
     coap_message_type_t reply_type = COAP_TYPE_ACK;
@@ -510,19 +519,19 @@ coap_receive(const coap_endpoint_t *src,
     uint8_t tmp_token[8];
     uint8_t token_len = 0;
     if(message->token_len) {
-          token_len = message->token_len;
-          memcpy(tmp_token, message->token, token_len);
+      token_len = message->token_len;
+      memcpy(tmp_token, message->token, token_len);
     }
 #endif /* WITH_OSCORE */
     coap_init_message(message, reply_type, coap_status_code,
-                      message->mid);
+        message->mid);
 #ifdef WITH_OSCORE
     if(token_len) {
-        coap_set_token(message, tmp_token, token_len);
+      coap_set_token(message, tmp_token, token_len);
     }
 #endif /* WITH_OSCORE */
     coap_set_payload(message, coap_error_message,
-                     strlen(coap_error_message));
+        strlen(coap_error_message));
     coap_sendto(src, payload, coap_serialize_message(message, payload));
 
   }
@@ -533,35 +542,35 @@ coap_receive(const coap_endpoint_t *src,
 /*---------------------------------------------------------------------------*/
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
 /*Now that the signature process has yielded, the message is ready; just send it*/
-void
+  void
 coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
 {
-      size_t msg_len = 0;
+  size_t msg_len = 0;
 #if COAP_GROUPCOM_DELAY == 0 
-      uint16_t delay_time = 1; 
+  uint16_t delay_time = 1; 
 #elif COAP_GROUPCOM_DELAY != 0 
-      uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY * CLOCK_SECOND)); 
+  uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY * CLOCK_SECOND)); 
 #endif /* COAP_GROUPCOM_DELAY */
 
-      coap_transaction_t *transaction = NULL;
-      transaction = coap_get_transaction_by_mid(message->mid);
-      if(transaction != NULL) {
-	      msg_len = coap_serialize_postcrypto(response, transaction->message);
-	      if(msg_len == 0) {
-		      LOG_ERR("POSTCRYPTO serialization failed!\n");
-	      	      return;
-	      }
-	      transaction->message_len = msg_len;
-              LOG_DBG("Scheduling delayed response after %d ticks...\n", delay_time);
-	      dr_mid = message->mid;
-	      ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);
-      } else {
-	      LOG_WARN("SEND POSTCRYPTO: transaction not found!\n");
-      }
+  coap_transaction_t *transaction = NULL;
+  transaction = coap_get_transaction_by_mid(message->mid);
+  if(transaction != NULL) {
+    msg_len = coap_serialize_postcrypto(response, transaction->message);
+    if(msg_len == 0) {
+      LOG_ERR("POSTCRYPTO serialization failed!\n");
+      return;
+    }
+    transaction->message_len = msg_len;
+    LOG_DBG("Scheduling delayed response after %d ticks...\n", delay_time);
+    dr_mid = message->mid;
+    ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);
+  } else {
+    LOG_WARN("SEND POSTCRYPTO: transaction not found!\n");
+  }
 }
 #endif /* WITH_GROUPCOM */
 /*---------------------------------------------------------------------------*/
-void
+  void
 coap_engine_init(void)
 {
   /* avoid initializing twice */
@@ -590,7 +599,7 @@ coap_engine_init(void)
  * extern keyword. The build system takes care of compiling every
  * *.c file in the ./resources/ sub-directory (see example Makefile).
  */
-void
+  void
 coap_activate_resource(coap_resource_t *resource, const char *path)
 {
   coap_periodic_resource_t *periodic;
@@ -601,8 +610,8 @@ coap_activate_resource(coap_resource_t *resource, const char *path)
 
   /* Only add periodic resources with a periodic_handler and a period > 0. */
   if(resource->flags & IS_PERIODIC && resource->periodic
-     && resource->periodic->periodic_handler
-     && resource->periodic->period) {
+      && resource->periodic->periodic_handler
+      && resource->periodic->period) {
     LOG_DBG("Periodic resource: %p (%s)\n", resource->periodic, path);
     periodic = resource->periodic;
     coap_timer_set_callback(&periodic->periodic_timer, process_callback);
@@ -615,22 +624,22 @@ coap_activate_resource(coap_resource_t *resource, const char *path)
 /*---------------------------------------------------------------------------*/
 /*- Internal API ------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-coap_resource_t *
+  coap_resource_t *
 coap_get_first_resource(void)
 {
   return list_head(coap_resource_services);
 }
 /*---------------------------------------------------------------------------*/
-coap_resource_t *
+  coap_resource_t *
 coap_get_next_resource(coap_resource_t *resource)
 {
   return list_item_next(resource);
 }
 /*---------------------------------------------------------------------------*/
-static int
+  static int
 invoke_coap_resource_service(coap_message_t *request, coap_message_t *response,
-                             uint8_t *buffer, uint16_t buffer_size,
-                             int32_t *offset)
+    uint8_t *buffer, uint16_t buffer_size,
+    int32_t *offset)
 {
   uint8_t found = 0;
   uint8_t allowed = 1;
@@ -645,14 +654,14 @@ invoke_coap_resource_service(coap_message_t *request, coap_message_t *response,
     /* if the web service handles that kind of requests and urls matches */
     res_url_len = strlen(resource->url);
     if((url_len == res_url_len
-        || (url_len > res_url_len
+          || (url_len > res_url_len
             && (resource->flags & HAS_SUB_RESOURCES)
             && url[res_url_len] == '/'))
-       && strncmp(resource->url, url, res_url_len) == 0) {
+        && strncmp(resource->url, url, res_url_len) == 0) {
       coap_resource_flags_t method = coap_get_method_type(request);
       found = 1;
       LOG_INFO("/%s, method %u, resource->flags %u\n", resource->url,
-               (uint16_t)method, resource->flags);
+          (uint16_t)method, resource->flags);
 
       if((method & METHOD_GET) && resource->get_handler != NULL) {
         /* call handler function */
@@ -660,14 +669,14 @@ invoke_coap_resource_service(coap_message_t *request, coap_message_t *response,
       } else if((method & METHOD_POST) && resource->post_handler != NULL) {
         /* call handler function */
         resource->post_handler(request, response, buffer, buffer_size,
-                               offset);
+            offset);
       } else if((method & METHOD_PUT) && resource->put_handler != NULL) {
         /* call handler function */
         resource->put_handler(request, response, buffer, buffer_size, offset);
       } else if((method & METHOD_DELETE) && resource->delete_handler != NULL) {
         /* call handler function */
         resource->delete_handler(request, response, buffer, buffer_size,
-                                 offset);
+            offset);
       } else {
         allowed = 0;
         coap_set_status_code(response, METHOD_NOT_ALLOWED_4_05);
@@ -687,15 +696,15 @@ invoke_coap_resource_service(coap_message_t *request, coap_message_t *response,
 }
 /*---------------------------------------------------------------------------*/
 /* This callback occurs when t is expired */
-static void
+  static void
 process_callback(coap_timer_t *t)
 {
   coap_resource_t *resource;
   resource = coap_timer_get_user_data(t);
   if(resource != NULL && (resource->flags & IS_PERIODIC)
-     && resource->periodic != NULL && resource->periodic->period) {
+      && resource->periodic != NULL && resource->periodic->period) {
     LOG_DBG("Periodic: timer expired for /%s (period: %"PRIu32")\n",
-            resource->url, resource->periodic->period);
+        resource->url, resource->periodic->period);
 
     if(!is_initialized) {
       /* CoAP has not yet been initialized. */
