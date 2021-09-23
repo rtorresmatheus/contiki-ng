@@ -102,6 +102,7 @@ coap_new_transaction_with_token(uint16_t mid, uint8_t *token, uint8_t token_len,
   if(t) {
     t->mid = mid; 
     t->retrans_counter = 0;
+    t->message_transmitted = 0;
     memcpy(t->token, token, token_len);
     t->token_len = token_len;
     /* save client address */
@@ -159,39 +160,38 @@ coap_send_transaction(coap_transaction_t *t)
     }
 #ifndef WITH_GROUPCOM
   } else {
-    printf("not CON\n");
     coap_sendto(&t->endpoint, t->message, t->message_len);
     coap_clear_transaction(t);
   }
 #else /* WITH_GROUPCOM */ 
   } else if (COAP_TYPE_NON ==
       ((COAP_HEADER_TYPE_MASK & t->message[0]) >> COAP_HEADER_TYPE_POSITION)) { 
-    if(t->retrans_counter <= COAP_MAX_RETRANSMIT) { //Always true on first call
+    /* Handle NON messages like CON messages that are transmitted for the last time i.e. wait N ms
+       and then remove the transaction. Not the most elegant solution, but it works. */
+    if(t->retrans_counter <= COAP_MAX_RETRANSMIT) {
       coap_sendto(&t->endpoint, t->message, t->message_len);
       LOG_DBG("Keeping NON transaction %u\n", t->mid);
 
-      if(t->retrans_counter == 0) { 
+      if(t->retrans_counter == 0) {
         coap_timer_set_callback(&t->retrans_timer, coap_retransmit_transaction);
         coap_timer_set_user_data(&t->retrans_timer, t);
-        t->retrans_interval =
-          COAP_RESPONSE_TIMEOUT_TICKS + (rand() %
-              COAP_RESPONSE_TIMEOUT_BACKOFF_MASK);
+        t->retrans_interval = COAP_MULTICAST_REQUEST_TIMEOUT_INTERVAL;
         LOG_DBG("Initial interval %lu msec\n",
             (unsigned long)t->retrans_interval);
       }
-      t->retrans_counter = COAP_MAX_RETRANSMIT; //Cheeky hack
-      // interval updated above
+      /* Supress retransmissions */
+      t->retrans_counter = COAP_MAX_RETRANSMIT;
+      /* interval updated above */
       coap_timer_set(&t->retrans_timer, t->retrans_interval);
     } else {
-      // timed out 
-      LOG_DBG("Timeout\n");
+      /* timed out */
+      LOG_DBG("Multicast transaction Timeout\n");
       coap_resource_response_handler_t callback = t->callback;
       void *callback_data = t->callback_data;
 
-      // handle observers 
+      /* handle observers */
       coap_remove_observer_by_client(&t->endpoint);
 
-      //only if multicast
       coap_clear_transaction(t); 
 
       if(callback) {
@@ -200,7 +200,6 @@ coap_send_transaction(coap_transaction_t *t)
     }
 
   } else {
-    printf("not CON\n");
     coap_sendto(&t->endpoint, t->message, t->message_len);
     coap_clear_transaction(t);
   }
@@ -242,7 +241,12 @@ coap_get_transaction_by_token(uint8_t *token, uint8_t token_len)
   for(t = (coap_transaction_t *)list_head(transactions_list); t; t = t->next) {
     if(t->token_len == token_len){ 
       if(memcmp(t->token, token, token_len) == 0) {
-        LOG_DBG("Found transaction for Token %02X %02X Token-len %d: %p\n", t->token[0], t->token[1], t->token_len, t);
+          LOG_DBG("Found transaction for Token (len %u) [0x%02X%02X%02X%02X%02X%02X%02X%02X]\n",
+          t->token_len, t->token[0], t->token[1],
+          t->token[2], t->token[3], t->token[4],
+          t->token[5], t->token[6], t->token[7]
+          );                     /* FIXME always prints 8 bytes */
+
         return t;
       }
     }

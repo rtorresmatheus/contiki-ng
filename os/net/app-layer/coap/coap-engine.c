@@ -196,8 +196,6 @@ int coap_receive(const coap_endpoint_t *src,
 #endif /*WITH_GROUPCOM*/
   coap_transaction_t *transaction = NULL;
   coap_handler_status_t status;
-  uint8_t is_multicast = 0;
-  const char *multicast_path = "mc/";
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
   coap_status_code = in_status;
 #ifdef OSCORE_WITH_HW_CRYPTO
@@ -224,29 +222,10 @@ int coap_receive(const coap_endpoint_t *src,
     LOG_DBG_("\n");
     LOG_DBG("  Payload length: %d\n", message->payload_len);
 
-    /*Server responses have NULL STR, so for client mcast check is not needed*/
-    if(message->uri_path) {
-
-      /*The flags to check if a multicast resource is requested*/
-      is_multicast = (strncmp(message->uri_path, multicast_path, strlen(multicast_path)) == 0 );
-
-      /*If requesting an unicast resource with a multicast address, or vice versa, ignore*/
-      if(is_mcast && !is_multicast ) {
-        LOG_DBG("Cannot request unicast resouces with multicast address! Ignoring...\n");
-        return 0;
-      } else if(!is_mcast && is_multicast) {
-        LOG_DBG("Cannot request multicast resource with unicast address! Ignoring...\n");
-        return 0;
-      }
-    } else {
-      LOG_DBG("A client receiving a response, no mcast check.\n");
-    }
     /* handle requests */
     if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
       /* use transaction buffer for response to confirmable request */
-      printf("create message before create transaction\n");
       if((transaction = coap_new_transaction(message->mid, src))) {
-        printf("creating new transaction\n");
         uint32_t block_num = 0;
         uint16_t block_size = COAP_MAX_BLOCK_SIZE;
         uint32_t block_offset = 0;
@@ -254,12 +233,10 @@ int coap_receive(const coap_endpoint_t *src,
         /* prepare response */
         if(message->type == COAP_TYPE_CON) {
           /* reliable CON requests are answered with an ACK */
-          printf("message type CON\n");
           coap_init_message(response, COAP_TYPE_ACK, CONTENT_2_05,
               message->mid);
         } else {
           /* unreliable NON requests are answered with a NON as well */
-          printf("message type NON\n");
           coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
               coap_get_mid());
         }
@@ -399,7 +376,6 @@ int coap_receive(const coap_endpoint_t *src,
         /* cancel possible subscriptions */
         coap_remove_observer_by_mid(src, message->mid);
       }
-      printf("here?\n");
       if((transaction = coap_get_transaction_by_mid(message->mid))) {
         /* free transaction memory before callback, as it may create a new transaction */
         coap_resource_response_handler_t callback = transaction->callback;
@@ -413,7 +389,13 @@ int coap_receive(const coap_endpoint_t *src,
         /* free transaction memory before callback, as it may create a new transaction */
         coap_resource_response_handler_t callback = transaction->callback;
         void *callback_data = transaction->callback_data;
-        coap_clear_transaction(transaction); //TODO remove this
+        #ifdef WITH_GROUPCOM
+     //   if (2==1) { //TODO remove this
+          coap_clear_transaction(transaction); 
+      //  }
+        #else
+        coap_clear_transaction(transaction); 
+        #endif /* WITH_GROUPCOM */
         /* check if someone registered for the response */
         if(callback) {
           callback(callback_data, message);

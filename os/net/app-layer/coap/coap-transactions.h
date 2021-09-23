@@ -70,6 +70,7 @@ typedef struct coap_transaction {
   void *callback_data;
 
 #ifdef WITH_GROUPCOM
+  uint8_t message_transmitted;
   uint8_t token_len;
   uint8_t token[COAP_TOKEN_LEN];
 #endif /* WITH_GROUPCOM */

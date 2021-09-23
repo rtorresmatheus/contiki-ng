@@ -290,14 +290,12 @@ coap_endpoint_is_connected(const coap_endpoint_t *ep)
 {
 #if WITH_GROUPCOM == 1
   if(uip_is_addr_mcast_global(&ep->ipaddr)){
-    printf("Multicast message-> conencted addres TODO check address\n");
+    LOG_DBG("Multicast message, assuming endpoint is connected.\n");
     return 1;
   }
 #endif /* WITH_GROUPCOM */
 
 #ifndef CONTIKI_TARGET_NATIVE
-  printf("connected debug uip_is_addr_linklocal(&ep->ipaddr) %d\n", uip_is_addr_linklocal(&ep->ipaddr));
-  printf("NETSTACK_ROUTING.node_is_reachable() %d\n", NETSTACK_ROUTING.node_is_reachable());
   if(!uip_is_addr_linklocal(&ep->ipaddr)
     && NETSTACK_ROUTING.node_is_reachable() == 0) {
     return 0;

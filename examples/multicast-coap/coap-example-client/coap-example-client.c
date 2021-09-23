@@ -70,7 +70,6 @@ AUTOSTART_PROCESSES(&er_example_client);
 
 static struct etimer et;
 char *url = "test/hello";
-static coap_endpoint_t endpoints[2];
 
 /* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
 void
@@ -89,48 +88,32 @@ client_chunk_handler(coap_message_t *response)
 }
 PROCESS_THREAD(er_example_client, ev, data)
 {
-  //static coap_endpoint_t server_ep;
+  static coap_endpoint_t server_ep;
   PROCESS_BEGIN();
-  printf("STARTING NETSTACK ROUTING as ROOT!\n");
   NETSTACK_ROUTING.root_start();
-  
-  uip_ipaddr_t ipaddr;
-  uip_ip6addr(&ipaddr, 0xFF1E,0,0,0,0,0,0x89,0xABCD);
-  printf("uip_is_addr_mcast_global %d\n",uip_is_addr_mcast_global(&ipaddr));
-  printf("uip_is_addr_mcast_non_routable %d\n", uip_is_addr_mcast_non_routable(&ipaddr));
-  printf("uip_is_addr_mcast_routable %d\n" ,uip_is_addr_mcast_routable(&ipaddr));
-  printf("uip_is_mcast_group_id_all_nodes %d\n", uip_is_mcast_group_id_all_nodes(&ipaddr));
-  printf("uip_is_mcast_group_id_all_routers %d\n", uip_is_mcast_group_id_all_routers(&ipaddr));
   
   static coap_message_t request[1];      /* This way the packet can be treated as pointer as usual. */
 
-  coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &endpoints[0]);
-  coap_endpoint_parse(MULTICAST_EP, strlen(MULTICAST_EP), &endpoints[1]);
+  coap_endpoint_parse(MULTICAST_EP, strlen(MULTICAST_EP), &server_ep);
 
-  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
+  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND * 3);
 
-  static unsigned int counter = 0;
   while(1) {
     PROCESS_YIELD();
 
     if(etimer_expired(&et)) {
       printf("--Toggle timer--\n");
-      counter = 1; //ONLY MULTICAST
       uint8_t token[2] = {0xAA, 0x00};
 
       /* prepare request, TID is set by COAP_BLOCKING_REQUEST() */
-      if ( counter % 2 == 0){
-          coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-      } else {
-          coap_init_message(request, COAP_TYPE_NON, COAP_GET, 0); // Multicast is always NON
-      } 
+      coap_init_message(request, COAP_TYPE_NON, COAP_GET, 0); 
+      
       coap_set_header_uri_path(request, url);
       coap_set_token(request, token, 2);
-      LOG_INFO_COAP_EP(&endpoints[counter % 2]);
+      LOG_INFO_COAP_EP(&server_ep);
       LOG_INFO_("\n");
 
-      COAP_BLOCKING_REQUEST(&endpoints[counter % 2], request, client_chunk_handler);
-      counter++;
+      COAP_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
       token[1]++;
       printf("\n--Done--\n");
 
