@@ -67,12 +67,8 @@
 coap_blocking_request_callback(void *callback_data, coap_message_t *response)
 {
   coap_blocking_request_state_t *blocking_state = (coap_blocking_request_state_t *)callback_data;
-  printf("callbacking\n");
   blocking_state->state.response = response;
-  printf("blocking state->process->name %s\n", blocking_state->process->name);
-  printf("near end of callback\n"); 
   process_poll(blocking_state->process);
-  printf("end_of callback\n"); 
 }
 /*---------------------------------------------------------------------------*/
   PT_THREAD(coap_blocking_request
@@ -85,7 +81,6 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
   coap_request_state_t *state = &blocking_state->state;
 
   PT_BEGIN(&blocking_state->pt);
-  printf("blocking API\n");
   state->block_num = 0;
   state->response = NULL;
   blocking_state->process = PROCESS_CURRENT();
@@ -103,19 +98,19 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
     if(coap_get_header_uri_path(request, &uri)){
       context = oscore_get_context_from_ep(remote_ep, uri);
     } else {
-      printf("NO URI PATH\n");
+      LOG_ERR("NO URI PATH\n");
     }
 
     if(context){
-      printf("OSCORE found!\n");
+      LOG_INFO("OSCORE found!\n");
       coap_set_oscore(request);
       request->security_context = context;
       //TODO maybe an if and random token should be added here
       uint8_t token[2] = {0xA, 0xA};
       coap_set_token(request, token, 2);
     } else {
-      printf("NO OSCORE!\n");
-      printf("URL %s \n", uri);
+      LOG_ERR("NO OSCORE!\n");
+      LOG_ERR("URL %s \n", uri);
     }
 #endif /* WITH_OSCORE */
     if((state->transaction = coap_new_transaction(request->mid, remote_ep))) {
@@ -154,12 +149,8 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
 
 
       if(state->res_block == state->block_num) {
-        printf("request_callback called\n");
         request_callback(state->response);
         ++(state->block_num);
-      } else if(state->more){
-        printf("HACK request_callback called\n");
-        request_callback(state->response);
       } else {
         LOG_WARN("WRONG BLOCK %"PRIu32"/%"PRIu32"\n",
             state->res_block, state->block_num);
@@ -180,8 +171,8 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
   }
   PT_END(&blocking_state->pt);
 }
-
-  PT_THREAD(coap_multicast_blocking_request
+/*---------------------------------------------------------------------------*/
+PT_THREAD(coap_multicast_blocking_request
       (coap_blocking_request_state_t *blocking_state, process_event_t ev,
        coap_endpoint_t *remote_ep,
        coap_message_t *request,
@@ -191,7 +182,6 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
   coap_request_state_t *state = &blocking_state->state;
 
   PT_BEGIN(&blocking_state->pt);
-  printf("blocking API\n");
   state->response = NULL;
   blocking_state->process = PROCESS_CURRENT();
 
@@ -203,23 +193,21 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
   if(coap_get_header_uri_path(request, &uri)){
     context = oscore_get_context_from_ep(remote_ep, uri);
   } else {
-    printf("NO URI PATH\n");
+    LOG_ERR("NO URI PATH\n");
   }
 
   if(context){
-    printf("OSCORE found!\n");
+    LOG_INFO("OSCORE found!\n");
     coap_set_oscore(request);
     request->security_context = context;
     //TODO maybe an if and random token should be added here
     uint8_t token[2] = {0xA, 0xA};
     coap_set_token(request, token, 2);
   } else {
-    printf("NO OSCORE!\n");
-    printf("URL %s \n", uri);
+    LOG_ERR("NO OSCORE!\n");
+    LOG_ERR("URL %s \n", uri);
   }
 #endif /* WITH_OSCORE */
-  printf("about to create transaction\n");
-  // state->transaction = 0; Makes it stop working
   if((state->transaction = coap_new_transaction_with_token(request->mid, request->token, request->token_len, remote_ep))){
 
       state->transaction->callback = coap_blocking_request_callback;
@@ -232,9 +220,7 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
       coap_send_multicast_transaction(state->transaction);
       LOG_DBG("Requested #%"PRIu32" (MID %u)\n", state->block_num, request->mid);
       
-      printf("before yield\n");
       PT_YIELD_UNTIL(&blocking_state->pt, ev == PROCESS_EVENT_POLL);
-      printf("after yield\n");
       do {
 
         if(!state->response) {
@@ -251,9 +237,6 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
     LOG_WARN("Could not allocate transaction buffer");
     PT_EXIT(&blocking_state->pt);
   }
-  printf("evaluating blocing request IF\n");
-
-  printf("end of blocking request\n");
   PT_END(&blocking_state->pt);
 }
 /*---------------------------------------------------------------------------*/

@@ -244,7 +244,6 @@ coap_send_multicast_transaction(coap_transaction_t *t)
       coap_clear_transaction(t); 
 
       if(callback) {
-        printf("transactions Callback\n");
         callback(callback_data, NULL);
       }
     }
