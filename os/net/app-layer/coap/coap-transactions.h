@@ -83,6 +83,7 @@ typedef struct coap_transaction {
 #ifdef WITH_GROUPCOM
 coap_transaction_t *coap_new_transaction_with_token(uint16_t mid, uint8_t *token, uint8_t token_len, const coap_endpoint_t *ep);
 coap_transaction_t *coap_get_transaction_by_token(uint8_t *token, uint8_t token_len);
+void coap_send_multicast_transaction(coap_transaction_t *t);
 #endif /* WITH_GROUPCOM */
 coap_transaction_t *coap_new_transaction(uint16_t mid, const coap_endpoint_t *ep);
 void coap_send_transaction(coap_transaction_t *t);

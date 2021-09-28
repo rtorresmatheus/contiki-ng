@@ -229,7 +229,7 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
           state->
           transaction->
           message);
-      coap_send_transaction(state->transaction);
+      coap_send_multicast_transaction(state->transaction);
       LOG_DBG("Requested #%"PRIu32" (MID %u)\n", state->block_num, request->mid);
       
       printf("before yield\n");
@@ -238,7 +238,7 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
       do {
 
         if(!state->response) {
-          LOG_WARN("Server not responding\n");
+          LOG_WARN("TIMEOUT\n");
           state->status = COAP_REQUEST_STATUS_TIMEOUT;
           request_callback(NULL); /* Call the callback with NULL to signal timeout */
           PT_EXIT(&blocking_state->pt);
