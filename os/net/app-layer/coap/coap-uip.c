@@ -426,11 +426,14 @@ process_data(void)
 
   buffer_flag = 1;
   parse_status = coap_receive(group_oscore_message_buffer, uip_datalen, request);
+  printf("coap_receive 1\n");
 #else //no OSCORE, but GROUPCOM
   coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), is_mcast);
+  printf("coap_receive 2\n");
 #endif /*WITH_OSCORE*/
 #else //not OSCORE, not GROUPCOM
   coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), 0);
+  printf("coap_receive 3\n");
 #endif /*WITH_GROUCPOM*/
 }
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
@@ -440,6 +443,8 @@ process_data_cont(uint8_t verify_res)
 {
 	LOG_INFO("signature verification yielded. Calling the receive continuation\n");
 	coap_receive_cont(get_src_endpoint(0), uip_appdata, uip_datalen(), is_mcast, verify_res, parse_status, request, response);
+        
+  printf("coap_receive 4\n");
 }
 /*---------------------------------------------------------------------------*/
 static void 
@@ -567,7 +572,7 @@ PROCESS_THREAD(coap_engine, ev, data)
 	printf("A\n");
 	#endif /* OTII_ENERGY */ 
 	process_data();
-
+        printf("after_process_data\n");
       }
     }
 #if defined WITH_GROUPCOM && defined WITH_OSCORE

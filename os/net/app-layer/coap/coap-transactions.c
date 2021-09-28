@@ -113,6 +113,12 @@ coap_new_transaction_with_token(uint16_t mid, uint8_t *token, uint8_t token_len,
 
   return t;
 }
+/*static void
+coap_multicast_dummy_callback(coap_timer_t *nt)
+{
+  LOG_DBG("Dummy callback from coap_timer!\n");
+  return;
+} */
 #endif /* WITH_GROUPCOM */
 /*---------------------------------------------------------------------------*/
   void
@@ -173,14 +179,18 @@ coap_send_transaction(coap_transaction_t *t)
       LOG_DBG("Keeping NON transaction %u\n", t->mid);
 
       if(t->retrans_counter == 0) {
+      //TODO maybe set a blank callback here?
         coap_timer_set_callback(&t->retrans_timer, coap_retransmit_transaction);
         coap_timer_set_user_data(&t->retrans_timer, t);
+       // coap_timer_set_callback(&t->retrans_timer, coap_multicast_dummy_callback);
+      //  coap_timer_set_user_data(&t->retrans_timer, t);
         t->retrans_interval = COAP_MULTICAST_REQUEST_TIMEOUT_INTERVAL;
         LOG_DBG("Initial interval %lu msec\n",
             (unsigned long)t->retrans_interval);
       }
       /* Supress retransmissions */
       t->retrans_counter = COAP_MAX_RETRANSMIT;
+      t->message_transmitted= 1;
       /* interval updated above */
       coap_timer_set(&t->retrans_timer, t->retrans_interval);
     } else {
@@ -195,6 +205,7 @@ coap_send_transaction(coap_transaction_t *t)
       coap_clear_transaction(t); 
 
       if(callback) {
+        printf("transactions Callback\n");
         callback(callback_data, NULL);
       }
     }
@@ -204,6 +215,7 @@ coap_send_transaction(coap_transaction_t *t)
     coap_clear_transaction(t);
   }
 #endif /* WITH_GROUPCOM */
+printf("returning from send transaction\n");
 }
 /*---------------------------------------------------------------------------*/
   void

@@ -186,6 +186,7 @@ int coap_receive(const coap_endpoint_t *src,
     uint8_t *payload, uint16_t payload_length, uint8_t is_mcast)
 #endif /*WITH_GROUPCOM && WITH_OSCORE*/
 {
+  printf("coap receive started\n");
   /* static declaration reduces stack peaks and program code size */
   static coap_message_t message[1]; /* this way the message can be treated as pointer as usual */
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
@@ -226,6 +227,7 @@ int coap_receive(const coap_endpoint_t *src,
     if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
       /* use transaction buffer for response to confirmable request */
       if((transaction = coap_new_transaction(message->mid, src))) {
+        printf("creating some kind of transaction\n");
         uint32_t block_num = 0;
         uint16_t block_size = COAP_MAX_BLOCK_SIZE;
         uint32_t block_offset = 0;
@@ -245,7 +247,7 @@ int coap_receive(const coap_endpoint_t *src,
           coap_set_oscore(response);
           if(message->security_context == NULL) {
             LOG_DBG("context is NULL\n");
-          }
+          }coap_receive
           response->security_context = message->security_context;
         }
 #endif /* WITH_OSCORE */
@@ -386,26 +388,32 @@ int coap_receive(const coap_endpoint_t *src,
           callback(callback_data, message);
         }
       } else if((transaction = coap_get_transaction_by_token(message->token, message->token_len))) {
+        printf("found transaction\n");
         /* free transaction memory before callback, as it may create a new transaction */
         coap_resource_response_handler_t callback = transaction->callback;
         void *callback_data = transaction->callback_data;
         #ifdef WITH_GROUPCOM
      //   if (2==1) { //TODO remove this
-          coap_clear_transaction(transaction); 
+     //     coap_clear_transaction(transaction); 
       //  }
         #else
+        printf("going to clear transaction\n");
         coap_clear_transaction(transaction); 
         #endif /* WITH_GROUPCOM */
         /* check if someone registered for the response */
         if(callback) {
+          printf("MC callback data %p message %p\n", callback_data, message);
           callback(callback_data, message);
+          printf("after callback\n");
+        }else{
+          printf("no callback\n");
         }
       } else {
         printf("found no transactyion\n");
       } 
       /* if(ACKed transaction) */
       transaction = NULL;
-
+printf("after callback 1\n");
 #if COAP_OBSERVE_CLIENT
       /* if observe notification */
       if((message->type == COAP_TYPE_CON || message->type == COAP_TYPE_NON)
@@ -418,8 +426,10 @@ int coap_receive(const coap_endpoint_t *src,
   } /* parsed correctly */
 
   /* if(parsed correctly) */
+printf("after callback 2\n");
   if(coap_status_code == NO_ERROR) {
     if(transaction) {
+printf("after callback 3\n");
 
 #ifdef WITH_GROUPCOM
       /* Eval printouts for Group-CoAP */
@@ -478,6 +488,7 @@ int coap_receive(const coap_endpoint_t *src,
     coap_clear_transaction(t);
     LOG_DBG("TODO send empty ACK!\n");
     /* check if someone registered for the response */
+    printf("after callback 5\n");
     if(callback) {
       callback(callback_data, message);
     }
@@ -485,7 +496,7 @@ int coap_receive(const coap_endpoint_t *src,
     return coap_status_code;
   } else {
     coap_message_type_t reply_type = COAP_TYPE_ACK;
-
+printf("after callback 6\n");
     LOG_WARN("ERROR %u: %s\n", coap_status_code, coap_error_message);
     coap_clear_transaction(transaction);
 
@@ -517,7 +528,7 @@ int coap_receive(const coap_endpoint_t *src,
     coap_sendto(src, payload, coap_serialize_message(message, payload));
 
   }
-
+printf("returning\n");
   /* if(new data) */
   return coap_status_code;
 }

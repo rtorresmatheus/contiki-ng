@@ -84,7 +84,7 @@ client_chunk_handler(coap_message_t *response)
 
   int len = coap_get_payload(response, &chunk);
 
-  printf("|%.*s", len, (char *)chunk);
+  printf("--------------------->|%.*s\n", len, (char *)chunk);
 }
 PROCESS_THREAD(er_example_client, ev, data)
 {
@@ -93,6 +93,7 @@ PROCESS_THREAD(er_example_client, ev, data)
   NETSTACK_ROUTING.root_start();
   
   static coap_message_t request[1];      /* This way the packet can be treated as pointer as usual. */
+  static uint8_t token[2] = {0xAA, 0x00};
 
   coap_endpoint_parse(MULTICAST_EP, strlen(MULTICAST_EP), &server_ep);
 
@@ -103,7 +104,6 @@ PROCESS_THREAD(er_example_client, ev, data)
 
     if(etimer_expired(&et)) {
       printf("--Toggle timer--\n");
-      uint8_t token[2] = {0xAA, 0x00};
 
       /* prepare request, TID is set by COAP_BLOCKING_REQUEST() */
       coap_init_message(request, COAP_TYPE_NON, COAP_GET, 0); 
@@ -113,9 +113,9 @@ PROCESS_THREAD(er_example_client, ev, data)
       LOG_INFO_COAP_EP(&server_ep);
       LOG_INFO_("\n");
 
-      COAP_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
+      COAP_MULTICAST_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
       token[1]++;
-      printf("\n--Done--\n");
+      printf("--Done--\n");
 
       etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     }
