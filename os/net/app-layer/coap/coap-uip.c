@@ -97,17 +97,8 @@ static struct uip_udp_conn *udp_conn = NULL;
 #ifdef WITH_GROUPCOM
 static uint8_t is_mcast = 0;
 /*TODO change checking srcaddr into checking the dst group addr.*/
-#define is_addr_mcast_group(a)		\
-  ((((a)->u8[0]) == 0xfd) &&            \
-   (((a)->u8[1]) == 0x00) &&            \
-   (((a)->u16[1]) == 0) &&              \
-   (((a)->u16[2]) == 0) &&              \
-   (((a)->u16[3]) == 0) &&              \
-   (((a)->u16[4]) == 0) &&              \
-   (((a)->u16[5]) == 0) &&              \
-   (((a)->u16[6]) == 0) &&              \
-   (((a)->u8[14]) == 0) &&              \
-   (((a)->u8[15]) == 0x01))
+#define is_addr_mcast(a)		\
+  (((a)->u8[0]) == 0xFF) 
 #ifdef WITH_OSCORE
 static coap_message_t request[1]; /*TODO enable multiple message processing*/
 static coap_message_t response[1];
@@ -409,7 +400,7 @@ process_data(void)
   LOG_INFO_("]:%u\n", uip_ntohs(UIP_UDP_BUF->srcport));
   LOG_INFO("  Length: %u\n", uip_datalen());
 #ifdef WITH_GROUPCOM
-  is_mcast = is_addr_mcast_group(&UIP_IP_BUF->srcipaddr);
+  is_mcast = is_addr_mcast(&UIP_IP_BUF->destipaddr);
   LOG_INFO("is_mcast: %d\n", is_mcast);
 #ifdef WITH_OSCORE
   uint16_t uip_datalen = uip_datalen();

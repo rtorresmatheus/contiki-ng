@@ -63,6 +63,7 @@
 /*Leisure time*/
 #include "sys/node-id.h"
 #include "sys/ctimer.h"
+#include "lib/random.h"
 
 static uint16_t dr_mid;
 static struct ctimer dr_timer;
@@ -245,7 +246,7 @@ int coap_receive(const coap_endpoint_t *src,
           coap_set_oscore(response);
           if(message->security_context == NULL) {
             LOG_DBG("context is NULL\n");
-          }coap_receive
+          }
           response->security_context = message->security_context;
         }
 #endif /* WITH_OSCORE */
@@ -389,11 +390,7 @@ int coap_receive(const coap_endpoint_t *src,
         /* free transaction memory before callback, as it may create a new transaction */
         coap_resource_response_handler_t callback = transaction->callback;
         void *callback_data = transaction->callback_data;
-        #ifdef WITH_GROUPCOM
-     //   if (2==1) { //TODO remove this
-     //     coap_clear_transaction(transaction); 
-      //  }
-        #else
+        #ifndef WITH_GROUPCOM
         coap_clear_transaction(transaction); 
         #endif /* WITH_GROUPCOM */
         /* check if someone registered for the response */
@@ -432,11 +429,7 @@ int coap_receive(const coap_endpoint_t *src,
 
       if(is_mcast) {
         /*Copy transport data to a timer data. The response will be sent at timer expiration.*/
-#if COAP_GROUPCOM_DELAY == 0 
-        uint16_t delay_time = 1; //TEMP small delay maybe 0 ticks wont work 
-#elif COAP_GROUPCOM_DELAY != 0
-        uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY_MILLIS * CLOCK_SECOND)); 
-#endif /* COAP_GROUPCOM_DELAY */
+        uint16_t delay_time = (random_rand() % (COAP_MULTICAST_RESPONSE_DELAY * CLOCK_SECOND)); 
         LOG_DBG("Scheduling delayed response after %d ticks...\n", delay_time);
         dr_mid = message->mid;
         ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);

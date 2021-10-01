@@ -224,7 +224,6 @@ PT_THREAD(coap_multicast_blocking_request
       do {
 
         if(!state->response) {
-          LOG_WARN("TIMEOUT\n");
           state->status = COAP_REQUEST_STATUS_TIMEOUT;
           request_callback(NULL); /* Call the callback with NULL to signal timeout */
           PT_EXIT(&blocking_state->pt);
@@ -232,7 +231,7 @@ PT_THREAD(coap_multicast_blocking_request
 
         request_callback(state->response);
         PT_YIELD_UNTIL(&blocking_state->pt, ev == PROCESS_EVENT_POLL);
-      } while(true);
+      } while(true); /* Process all responses */
   } else {
     LOG_WARN("Could not allocate transaction buffer");
     PT_EXIT(&blocking_state->pt);
