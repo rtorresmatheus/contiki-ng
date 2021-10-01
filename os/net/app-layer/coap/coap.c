@@ -182,7 +182,7 @@ coap_serialize_array_option(unsigned int number, unsigned int current_number,
 {
   size_t i = 0;
 
-  LOG_DBG("ARRAY type %u, len %zu, full [", number, length);
+  LOG_DBG("ARRAY type %u, len %u, full [", number, length);
   LOG_DBG_COAP_STRING((const char *)array, length);
   LOG_DBG_("]\n");
 
@@ -193,7 +193,7 @@ coap_serialize_array_option(unsigned int number, unsigned int current_number,
     size_t temp_length;
 
     for(j = 0; j <= length + 1; ++j) {
-      LOG_DBG("STEP %u/%zu (%c)\n", j, length, array[j]);
+      LOG_DBG("STEP %u/%u (%c)\n", j, length, array[j]);
       if(array[j] == split_char || j == length) {
         part_end = array + j;
         temp_length = part_end - part_start;

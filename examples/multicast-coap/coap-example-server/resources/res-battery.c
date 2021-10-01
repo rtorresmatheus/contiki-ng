@@ -31,25 +31,52 @@
 
 /**
  * \file
- *      Erbium (Er) example project configuration.
+ *      Example resource
  * \author
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
+#include "contiki.h"
 
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
-#include "../common-conf.h"
+#if PLATFORM_HAS_BATTERY
 
+#include <string.h>
+#include <stdio.h>
+#include "coap-engine.h"
+#include "dev/battery-sensor.h"
 
-/*(1) Memory occupancy (RAM and ROM)(2) Time spent by the CPU to process incoming/outgoing messages(3) Time spent by the radio to transmit CoAP messages(4) Time spent by the radio to receive CoAP messages(5) Energy consumed by the CPU to process incoming/outgoing messages(6) Energy consumed by the radio to transmit CoAP responses(7) Energy consumed by the radio to receive CoAP requests(8)Round Trip Time experienced by the client, measured since the time the CoAP request is sent until the last CoAPresponse is received. */
+static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
+/* A simple getter example. Returns the reading from light sensor with a simple etag */
+RESOURCE(res_battery,
+         "title=\"Battery status\";rt=\"Battery\"",
+         res_get_handler,
+         NULL,
+         NULL,
+         NULL);
 
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-#ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_ESMRF
-#endif
+static void
+res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  int battery = battery_sensor.value(0);
 
+  unsigned int accept = -1;
+  coap_get_header_accept(request, &accept);
 
-#endif /* PROJECT_CONF_H_ */
+  if(accept == -1 || accept == TEXT_PLAIN) {
+    coap_set_header_content_format(response, TEXT_PLAIN);
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "%d", battery);
+
+    coap_set_payload(response, (uint8_t *)buffer, strlen((char *)buffer));
+  } else if(accept == APPLICATION_JSON) {
+    coap_set_header_content_format(response, APPLICATION_JSON);
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{'battery':%d}", battery);
+
+    coap_set_payload(response, buffer, strlen((char *)buffer));
+  } else {
+    coap_set_status_code(response, NOT_ACCEPTABLE_4_06);
+    const char *msg = "Supporting content-types text/plain and application/json";
+    coap_set_payload(response, msg, strlen(msg));
+  }
+}
+#endif /* PLATFORM_HAS_BATTERY */

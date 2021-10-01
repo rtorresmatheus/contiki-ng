@@ -39,6 +39,28 @@
 #ifndef PROJECT_CONF_H_
 #define PROJECT_CONF_H_
 
+#include "net/ipv6/multicast/uip-mcast6-engines.h"
+
+/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
+#ifndef UIP_MCAST6_CONF_ENGINE
+#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_ESMRF 
+#endif
+
+#define UIP_MCAST6_ROUTE_CONF_ROUTES 3
+
+/* Code/RAM footprint savings so that things will fit on our device */
+#ifndef NETSTACK_MAX_ROUTE_ENTRIES
+#define NETSTACK_MAX_ROUTE_ENTRIES  3
+#endif
+
+#ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
+#define NBR_TABLE_CONF_MAX_NEIGHBORS 3 
+#endif
+
+#define REST_MAX_CHUNK_SIZE 230
+
+
+
 #define LOG_LEVEL_APP LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
 /* Enable client-side support for COAP observe */

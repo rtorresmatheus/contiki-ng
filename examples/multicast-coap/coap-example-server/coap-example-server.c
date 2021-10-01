@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Loughborough University - Computer Science
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,44 +31,50 @@
 
 /**
  * \file
- *         Project specific configuration defines for the RPl multicast
- *         example.
- *
+ *      Erbium (Er) CoAP Engine example.
  * \author
- *         George Oikonomou - <oikonomou@users.sourceforge.net>
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "contiki.h"
+#include "coap-engine.h"
+#include "net/routing/routing.h"
 
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
+/* Log configuration */
+#include "sys/log.h"
+#define LOG_MODULE "App"
+#define LOG_LEVEL LOG_LEVEL_APP
+/*
+ * Resources to be activated need to be imported through the extern keyword.
+ * The build system automatically compiles the resources in the corresponding sub-directory.
+ */
+extern coap_resource_t
+  res_hello;
 
-#define LOG_LEVEL_APP           LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_DBG
+PROCESS(er_example_server, "Erbium Example Server");
+AUTOSTART_PROCESSES(&er_example_server);
 
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-#ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_SMRF
-#endif
+PROCESS_THREAD(er_example_server, ev, data)
+{
+  PROCESS_BEGIN();
+  PROCESS_PAUSE();
 
-/* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
-#define ROLL_TM_CONF_IMIN_1         64
-#define MPL_CONF_DATA_MESSAGE_IMIN  64
-#define MPL_CONF_CONTROL_MESSAGE_IMIN  64
+  LOG_INFO("Starting Erbium Example Server\n");
 
-#define UIP_MCAST6_ROUTE_CONF_ROUTES 3
+  /*
+   * Bind the resources to their Uri-Path.
+   * WARNING: Activating twice only means alternate path, not two instances!
+   * All static variables are the same for each URI path.
+   */
+  coap_activate_resource(&res_hello, "test/hello");
 
-/* Code/RAM footprint savings so that things will fit on our device */
-#ifndef NETSTACK_MAX_ROUTE_ENTRIES
-#define NETSTACK_MAX_ROUTE_ENTRIES   10
-#endif
+  /* Define application-specific events here. */
+  while(1) {
+    PROCESS_WAIT_EVENT();
+  }                             /* while (1) */
 
-#ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS 10
-#endif
-
-#define LOG_CONF_LEVEL_MAIN LOG_LEVEL_INFO 
-
-#endif /* PROJECT_CONF_H_ */
+  PROCESS_END();
+}

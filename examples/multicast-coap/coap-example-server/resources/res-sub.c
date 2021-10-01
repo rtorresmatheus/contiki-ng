@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Loughborough University - Computer Science
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,44 +31,40 @@
 
 /**
  * \file
- *         Project specific configuration defines for the RPl multicast
- *         example.
- *
+ *      Example resource
  * \author
- *         George Oikonomou - <oikonomou@users.sourceforge.net>
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
+#include <stdio.h>
+#include <string.h>
+#include "coap-engine.h"
 
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
+static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-#define LOG_LEVEL_APP           LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_DBG
+/*
+ * Example for a resource that also handles all its sub-resources.
+ * Use coap_get_url() to multiplex the handling of the request depending on the Uri-Path.
+ */
+PARENT_RESOURCE(res_sub,
+                "title=\"Sub-resource demo\"",
+                res_get_handler,
+                NULL,
+                NULL,
+                NULL);
 
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-#ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_SMRF
-#endif
+static void
+res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  coap_set_header_content_format(response, TEXT_PLAIN);
 
-/* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
-#define ROLL_TM_CONF_IMIN_1         64
-#define MPL_CONF_DATA_MESSAGE_IMIN  64
-#define MPL_CONF_CONTROL_MESSAGE_IMIN  64
+  const char *uri_path = NULL;
+  int len = coap_get_header_uri_path(request, &uri_path);
+  int base_len = strlen(res_sub.url);
 
-#define UIP_MCAST6_ROUTE_CONF_ROUTES 3
-
-/* Code/RAM footprint savings so that things will fit on our device */
-#ifndef NETSTACK_MAX_ROUTE_ENTRIES
-#define NETSTACK_MAX_ROUTE_ENTRIES   10
-#endif
-
-#ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS 10
-#endif
-
-#define LOG_CONF_LEVEL_MAIN LOG_LEVEL_INFO 
-
-#endif /* PROJECT_CONF_H_ */
+  if(len == base_len) {
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "Request any sub-resource of /%s", res_sub.url);
+  } else {
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, ".%.*s", len - base_len, uri_path + base_len);
+  } coap_set_payload(response, buffer, strlen((char *)buffer));
+}

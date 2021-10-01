@@ -25,5 +25,8 @@ MODULES_REL += ../resources
 #dissable Werror for now
 WERROR=0
 
+MAKE_ROUTING = MAKE_ROUTING_RPL_CLASSIC
+MODULES += os/net/routing/rpl-classic
+
 CONTIKI=../../..
 include $(CONTIKI)/Makefile.include

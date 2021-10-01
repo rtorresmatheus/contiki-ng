@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Loughborough University - Computer Science
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,44 +31,32 @@
 
 /**
  * \file
- *         Project specific configuration defines for the RPl multicast
- *         example.
- *
+ *      Example resource
  * \author
- *         George Oikonomou - <oikonomou@users.sourceforge.net>
+ *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#ifndef PROJECT_CONF_H_
-#define PROJECT_CONF_H_
+#include "contiki.h"
+#include "coap-engine.h"
+#include "dev/leds.h"
 
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
+#include <string.h>
 
-#define LOG_LEVEL_APP           LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_DBG
+#if PLATFORM_HAS_LEDS || LEDS_COUNT
 
-/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
-#ifndef UIP_MCAST6_CONF_ENGINE
-#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_SMRF
-#endif
+static void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-/* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
-#define ROLL_TM_CONF_IMIN_1         64
-#define MPL_CONF_DATA_MESSAGE_IMIN  64
-#define MPL_CONF_CONTROL_MESSAGE_IMIN  64
+/* A simple actuator example. Toggles the red led */
+RESOURCE(res_toggle,
+         "title=\"Red LED\";rt=\"Control\"",
+         NULL,
+         res_post_handler,
+         NULL,
+         NULL);
 
-#define UIP_MCAST6_ROUTE_CONF_ROUTES 3
-
-/* Code/RAM footprint savings so that things will fit on our device */
-#ifndef NETSTACK_MAX_ROUTE_ENTRIES
-#define NETSTACK_MAX_ROUTE_ENTRIES   10
-#endif
-
-#ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS 10
-#endif
-
-#define LOG_CONF_LEVEL_MAIN LOG_LEVEL_INFO 
-
-#endif /* PROJECT_CONF_H_ */
+static void
+res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+  leds_toggle(LEDS_RED);
+}
+#endif /* PLATFORM_HAS_LEDS */

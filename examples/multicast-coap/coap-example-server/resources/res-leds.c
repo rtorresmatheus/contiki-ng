@@ -31,88 +31,71 @@
 
 /**
  * \file
- *      Erbium (Er) CoAP Engine example.
+ *      Example resource
  * \author
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "contiki.h"
 #include "coap-engine.h"
+#include "dev/leds.h"
 
-#include "contiki-net.h"
-#include "net/ipv6/multicast/uip-mcast6.h"
+#include <string.h>
+
+#if PLATFORM_HAS_LEDS || LEDS_COUNT
 
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_INFO
-/*
- * Resources to be activated need to be imported through the extern keyword.
- * The build system automatically compiles the resources in the corresponding sub-directory.
- */
-extern coap_resource_t
-#ifdef ENERGEST_CONF_ON
-  res_stat,
-#endif /* ENERGEST_CONF_ON */
-  res_post;
+#define LOG_LEVEL LOG_LEVEL_APP
 
+static void res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-#if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
-static uip_ds6_maddr_t *
-join_mcast_group(void)
+/* A simple actuator example, depending on the color query parameter and post variable mode, corresponding led is activated or deactivated */
+RESOURCE(res_leds,
+         "title=\"LEDs: ?color=r|g|b, POST/PUT mode=on|off\";rt=\"Control\"",
+         NULL,
+         res_post_put_handler,
+         res_post_put_handler,
+         NULL);
+
+static void
+res_post_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
-  uip_ipaddr_t addr;
-  uip_ds6_maddr_t *rv;
-  const uip_ipaddr_t *default_prefix = uip_ds6_default_prefix();
+  size_t len = 0;
+  const char *color = NULL;
+  const char *mode = NULL;
+  uint8_t led = 0;
+  int success = 1;
 
-  /* First, set our v6 global */
-  uip_ip6addr_copy(&addr, default_prefix);
-  uip_ds6_set_addr_iid(&addr, &uip_lladdr);
-  uip_ds6_addr_add(&addr, 0, ADDR_AUTOCONF);
+  if((len = coap_get_query_variable(request, "color", &color))) {
+    LOG_DBG("color %.*s\n", (int)len, color);
 
-  /*
-   * IPHC will use stateless multicast compression for this destination
-   * (M=1, DAC=0), with 32 inline bits (1E 89 AB CD)
-   */
-  uip_ip6addr(&addr, 0xFF1E,0,0,0,0,0,0x89,0xABCD);
-  rv = uip_ds6_maddr_add(&addr);
+    if(strncmp(color, "r", len) == 0) {
+      led = LEDS_RED;
+    } else if(strncmp(color, "g", len) == 0) {
+      led = LEDS_GREEN;
+    } else if(strncmp(color, "b", len) == 0) {
+      led = LEDS_BLUE;
+    } else {
+      success = 0;
+    }
+  } else {
+    success = 0;
+  } if(success && (len = coap_get_post_variable(request, "mode", &mode))) {
+    LOG_DBG("mode %s\n", mode);
 
-  if(rv) {
-    LOG_INFO("Joined multicast group ");
-    LOG_INFO_6ADDR(&uip_ds6_maddr_lookup(&addr)->ipaddr);
-    LOG_INFO("\n");
+    if(strncmp(mode, "on", len) == 0) {
+      leds_on(led);
+    } else if(strncmp(mode, "off", len) == 0) {
+      leds_off(led);
+    } else {
+      success = 0;
+    }
+  } else {
+    success = 0;
+  } if(!success) {
+    coap_set_status_code(response, BAD_REQUEST_4_00);
   }
-  return rv;
 }
-#endif
-
-
-PROCESS(er_example_server, "Erbium Example Server");
-AUTOSTART_PROCESSES(&er_example_server);
-PROCESS_THREAD(er_example_server, ev, data)
-{
-  PROCESS_BEGIN();
-
-#if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
-//  if(join_mcast_group() == NULL) {
-//    LOG_INFO("Failed to join multicast group\n");
-//    PROCESS_EXIT();
-//  }
-#endif
-
-  PROCESS_PAUSE();
-
-  coap_activate_resource(&res_post, "mc/post");
-#ifdef ENERGEST_CONF_ON
-  coap_activate_resource(&res_stat, "mc/stat");
-#endif /* ENERGEST_CONF_ON */
-  
-  while(1) {
-    PROCESS_WAIT_EVENT();
-  }                             /* while (1) */
-
-  PROCESS_END();
-}
+#endif /* PLATFORM_HAS_LEDS */

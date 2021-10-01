@@ -54,9 +54,8 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL  LOG_LEVEL_APP
 
-/* FIXME: This server address is hard-coded for Cooja and link-local for unconnected border router. */
-//#define SERVER_EP "coap://[fe80::212:7402:0002:0202]"
-#define SERVER_EP "coap://[ff1E::89:ABCD]"
+#define MULTICAST_EP "coap://[ff1E::89:ABCD]"
+#define SERVER_EP "coap://[fd00::212:4b00:14b5:d967]"
 
 #if !NETSTACK_CONF_WITH_IPV6 || !UIP_IPV6_MULTICAST || !UIP_CONF_IPV6_RPL
 #error "This example can not work with the current contiki configuration"
@@ -70,15 +69,7 @@ PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
 
 static struct etimer et;
-
-/* Example URIs that can be queried. */
-#define NUMBER_OF_URLS 4
-/* leading and ending slashes only for demo purposes, get cropped automatically when setting the Uri-Path */
-char *service_urls[NUMBER_OF_URLS] =
-{ ".well-known/core", "/actuators/toggle", "battery/", "error/in//path" };
-#if PLATFORM_HAS_BUTTON
-static int uri_switch = 0;
-#endif
+char *url = "test/hello";
 
 /* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
 void
@@ -93,25 +84,20 @@ client_chunk_handler(coap_message_t *response)
 
   int len = coap_get_payload(response, &chunk);
 
-  printf("|%.*s", len, (char *)chunk);
+  printf("--------------------->|%.*s\n", len, (char *)chunk);
 }
 PROCESS_THREAD(er_example_client, ev, data)
 {
   static coap_endpoint_t server_ep;
   PROCESS_BEGIN();
-
+  NETSTACK_ROUTING.root_start();
+  
   static coap_message_t request[1];      /* This way the packet can be treated as pointer as usual. */
+  static uint8_t token[2] = {0xAA, 0x00};
 
-  coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_ep);
+  coap_endpoint_parse(MULTICAST_EP, strlen(MULTICAST_EP), &server_ep);
 
-  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
-
-#if PLATFORM_HAS_BUTTON
-#if !PLATFORM_SUPPORTS_BUTTON_HAL
-  SENSORS_ACTIVATE(button_sensor);
-#endif
-  printf("Press a button to request %s\n", service_urls[uri_switch]);
-#endif /* PLATFORM_HAS_BUTTON */
+  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND * 3);
 
   while(1) {
     PROCESS_YIELD();
@@ -120,46 +106,18 @@ PROCESS_THREAD(er_example_client, ev, data)
       printf("--Toggle timer--\n");
 
       /* prepare request, TID is set by COAP_BLOCKING_REQUEST() */
-      coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-      coap_set_header_uri_path(request, service_urls[1]);
-
-      const char msg[] = "Toggle!";
-
-      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
-
+      coap_init_message(request, COAP_TYPE_NON, COAP_GET, 0); 
+      
+      coap_set_header_uri_path(request, url);
+      coap_set_token(request, token, 2);
       LOG_INFO_COAP_EP(&server_ep);
       LOG_INFO_("\n");
 
-      COAP_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
+      COAP_MULTICAST_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
+      token[1]++;
+      printf("--Done--\n");
 
-      printf("\n--Done--\n");
-
-      etimer_reset(&et);
-
-#if PLATFORM_HAS_BUTTON
-#if PLATFORM_SUPPORTS_BUTTON_HAL
-    } else if(ev == button_hal_release_event) {
-#else
-    } else if(ev == sensors_event && data == &button_sensor) {
-#endif
-
-      /* send a request to notify the end of the process */
-
-      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-      coap_set_header_uri_path(request, service_urls[uri_switch]);
-
-      printf("--Requesting %s--\n", service_urls[uri_switch]);
-
-      LOG_INFO_COAP_EP(&server_ep);
-      LOG_INFO_("\n");
-
-      COAP_BLOCKING_REQUEST(&server_ep, request,
-                            client_chunk_handler);
-
-      printf("\n--Done--\n");
-
-      uri_switch = (uri_switch + 1) % NUMBER_OF_URLS;
-#endif /* PLATFORM_HAS_BUTTON */
+      etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     }
   }
 

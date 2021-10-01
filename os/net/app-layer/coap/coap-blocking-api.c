@@ -63,26 +63,24 @@
 /*---------------------------------------------------------------------------*/
 /*- Client Part -------------------------------------------------------------*/
 /*---------------------------------------------------------------------------*/
-void
+  void
 coap_blocking_request_callback(void *callback_data, coap_message_t *response)
 {
   coap_blocking_request_state_t *blocking_state = (coap_blocking_request_state_t *)callback_data;
-
   blocking_state->state.response = response;
   process_poll(blocking_state->process);
 }
 /*---------------------------------------------------------------------------*/
-PT_THREAD(coap_blocking_request
-          (coap_blocking_request_state_t *blocking_state, process_event_t ev,
-           coap_endpoint_t *remote_ep,
-           coap_message_t *request,
-           coap_blocking_response_handler_t request_callback))
+  PT_THREAD(coap_blocking_request
+      (coap_blocking_request_state_t *blocking_state, process_event_t ev,
+       coap_endpoint_t *remote_ep,
+       coap_message_t *request,
+       coap_blocking_response_handler_t request_callback))
 {
   /* Before PT_BEGIN in order to not be a local variable in the PT_Thread and maintain it */
   coap_request_state_t *state = &blocking_state->state;
 
   PT_BEGIN(&blocking_state->pt);
-
   state->block_num = 0;
   state->response = NULL;
   blocking_state->process = PROCESS_CURRENT();
@@ -93,44 +91,43 @@ PT_THREAD(coap_blocking_request
 
   do {
     request->mid = coap_get_mid();
-    #ifdef WITH_OSCORE
+#ifdef WITH_OSCORE
 
     const char *uri;
     oscore_ctx_t *context = NULL;
     if(coap_get_header_uri_path(request, &uri)){
       context = oscore_get_context_from_ep(remote_ep, uri);
     } else {
-  	printf("NO URI PATH\n");
+      LOG_ERR("NO URI PATH\n");
     }
 
     if(context){
-	printf("OSCORE found!\n");
-	coap_set_oscore(request);
-	request->security_context = context;
- 	//TODO maybe an if and random token should be added here
-	uint8_t token[2] = {0xA, 0xA};
-    	coap_set_token(request, token, 2);
+      LOG_INFO("OSCORE found!\n");
+      coap_set_oscore(request);
+      request->security_context = context;
+      //TODO maybe an if and random token should be added here
+      uint8_t token[2] = {0xA, 0xA};
+      coap_set_token(request, token, 2);
     } else {
-	printf("NO OSCORE!\n");
-	printf("URL %s \n", uri);
+      LOG_ERR("NO OSCORE!\n");
+      LOG_ERR("URL %s \n", uri);
     }
-    #endif /* WITH_OSCORE */
+#endif /* WITH_OSCORE */
     if((state->transaction = coap_new_transaction(request->mid, remote_ep))) {
+
       state->transaction->callback = coap_blocking_request_callback;
       state->transaction->callback_data = blocking_state;
 
       if(state->block_num > 0) {
         coap_set_header_block2(request, state->block_num, 0,
-                               COAP_MAX_CHUNK_SIZE);
+            COAP_MAX_CHUNK_SIZE);
       }
       state->transaction->message_len = coap_serialize_message(request,
-                                                              state->
-                                                              transaction->
-                                                              message);
-
+          state->
+          transaction->
+          message);
       coap_send_transaction(state->transaction);
       LOG_DBG("Requested #%"PRIu32" (MID %u)\n", state->block_num, request->mid);
-
       PT_YIELD_UNTIL(&blocking_state->pt, ev == PROCESS_EVENT_POLL);
 
       if(!state->response) {
@@ -141,21 +138,22 @@ PT_THREAD(coap_blocking_request
       }
 
       coap_get_header_block2(state->response, &state->res_block, &state->more, NULL, NULL);
-
       LOG_DBG("Received #%"PRIu32"%s (%u bytes)\n", state->res_block, state->more ? "+" : "",
-              state->response->payload_len);
+          state->response->payload_len);
       if(state->more) {
         state->status = COAP_REQUEST_STATUS_MORE;
       } else {
         state->status = COAP_REQUEST_STATUS_RESPONSE;
       }
 
+
+
       if(state->res_block == state->block_num) {
         request_callback(state->response);
         ++(state->block_num);
       } else {
         LOG_WARN("WRONG BLOCK %"PRIu32"/%"PRIu32"\n",
-                 state->res_block, state->block_num);
+            state->res_block, state->block_num);
         ++(state->block_error);
       }
     } else {
@@ -165,11 +163,78 @@ PT_THREAD(coap_blocking_request
   } while(state->more && (state->block_error) < COAP_MAX_ATTEMPTS);
 
   if((state->block_error) >= COAP_MAX_ATTEMPTS) {
-     /* failure - now we give up */
+    /* failure - now we give up */
     state->status = COAP_REQUEST_STATUS_BLOCK_ERROR;
   } else {
     /* No more blocks, request finished */
     state->status = COAP_REQUEST_STATUS_FINISHED;
+  }
+  PT_END(&blocking_state->pt);
+}
+/*---------------------------------------------------------------------------*/
+PT_THREAD(coap_multicast_blocking_request
+      (coap_blocking_request_state_t *blocking_state, process_event_t ev,
+       coap_endpoint_t *remote_ep,
+       coap_message_t *request,
+       coap_blocking_response_handler_t request_callback))
+{
+  /* Before PT_BEGIN in order to not be a local variable in the PT_Thread and maintain it */
+  coap_request_state_t *state = &blocking_state->state;
+
+  PT_BEGIN(&blocking_state->pt);
+  state->response = NULL;
+  blocking_state->process = PROCESS_CURRENT();
+
+  request->mid = coap_get_mid();
+#ifdef WITH_OSCORE
+
+  const char *uri;
+  oscore_ctx_t *context = NULL;
+  if(coap_get_header_uri_path(request, &uri)){
+    context = oscore_get_context_from_ep(remote_ep, uri);
+  } else {
+    LOG_ERR("NO URI PATH\n");
+  }
+
+  if(context){
+    LOG_INFO("OSCORE found!\n");
+    coap_set_oscore(request);
+    request->security_context = context;
+    //TODO maybe an if and random token should be added here
+    uint8_t token[2] = {0xA, 0xA};
+    coap_set_token(request, token, 2);
+  } else {
+    LOG_ERR("NO OSCORE!\n");
+    LOG_ERR("URL %s \n", uri);
+  }
+#endif /* WITH_OSCORE */
+  if((state->transaction = coap_new_transaction_with_token(request->mid, request->token, request->token_len, remote_ep))){
+
+      state->transaction->callback = coap_blocking_request_callback;
+      state->transaction->callback_data = blocking_state;
+
+      state->transaction->message_len = coap_serialize_message(request,
+          state->
+          transaction->
+          message);
+      coap_send_multicast_transaction(state->transaction);
+      LOG_DBG("Requested #%"PRIu32" (MID %u)\n", state->block_num, request->mid);
+      
+      PT_YIELD_UNTIL(&blocking_state->pt, ev == PROCESS_EVENT_POLL);
+      do {
+
+        if(!state->response) {
+          state->status = COAP_REQUEST_STATUS_TIMEOUT;
+          request_callback(NULL); /* Call the callback with NULL to signal timeout */
+          PT_EXIT(&blocking_state->pt);
+        }
+
+        request_callback(state->response);
+        PT_YIELD_UNTIL(&blocking_state->pt, ev == PROCESS_EVENT_POLL);
+      } while(true); /* Process all responses */
+  } else {
+    LOG_WARN("Could not allocate transaction buffer");
+    PT_EXIT(&blocking_state->pt);
   }
   PT_END(&blocking_state->pt);
 }

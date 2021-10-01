@@ -60,6 +60,11 @@
 #include "coap-keystore.h"
 #include "coap-keystore-simple.h"
 
+
+#include "contiki-net.h"
+#include "net/ipv6/multicast/uip-mcast6.h"
+
+
 /* Log configuration */
 #include "coap-log.h"
 #define LOG_MODULE "coap-uip"
@@ -92,17 +97,8 @@ static struct uip_udp_conn *udp_conn = NULL;
 #ifdef WITH_GROUPCOM
 static uint8_t is_mcast = 0;
 /*TODO change checking srcaddr into checking the dst group addr.*/
-#define is_addr_mcast_group(a)		\
-  ((((a)->u8[0]) == 0xfd) &&            \
-   (((a)->u8[1]) == 0x00) &&            \
-   (((a)->u16[1]) == 0) &&              \
-   (((a)->u16[2]) == 0) &&              \
-   (((a)->u16[3]) == 0) &&              \
-   (((a)->u16[4]) == 0) &&              \
-   (((a)->u16[5]) == 0) &&              \
-   (((a)->u16[6]) == 0) &&              \
-   (((a)->u8[14]) == 0) &&              \
-   (((a)->u8[15]) == 0x01))
+#define is_addr_mcast(a)		\
+  (((a)->u8[0]) == 0xFF) 
 #ifdef WITH_OSCORE
 static coap_message_t request[1]; /*TODO enable multiple message processing*/
 static coap_message_t response[1];
@@ -283,6 +279,13 @@ coap_endpoint_is_secure(const coap_endpoint_t *ep)
 int
 coap_endpoint_is_connected(const coap_endpoint_t *ep)
 {
+#if WITH_GROUPCOM == 1
+  if(uip_is_addr_mcast_global(&ep->ipaddr)){
+    LOG_DBG("Multicast message, assuming endpoint is connected.\n");
+    return 1;
+  }
+#endif /* WITH_GROUPCOM */
+
 #ifndef CONTIKI_TARGET_NATIVE
   if(!uip_is_addr_linklocal(&ep->ipaddr)
     && NETSTACK_ROUTING.node_is_reachable() == 0) {
@@ -397,7 +400,7 @@ process_data(void)
   LOG_INFO_("]:%u\n", uip_ntohs(UIP_UDP_BUF->srcport));
   LOG_INFO("  Length: %u\n", uip_datalen());
 #ifdef WITH_GROUPCOM
-  is_mcast = is_addr_mcast_group(&UIP_IP_BUF->srcipaddr);
+  is_mcast = is_addr_mcast(&UIP_IP_BUF->destipaddr);
   LOG_INFO("is_mcast: %d\n", is_mcast);
 #ifdef WITH_OSCORE
   uint16_t uip_datalen = uip_datalen();
@@ -428,6 +431,7 @@ process_data_cont(uint8_t verify_res)
 {
 	LOG_INFO("signature verification yielded. Calling the receive continuation\n");
 	coap_receive_cont(get_src_endpoint(0), uip_appdata, uip_datalen(), is_mcast, verify_res, parse_status, request, response);
+        
 }
 /*---------------------------------------------------------------------------*/
 static void 
@@ -477,14 +481,52 @@ coap_sendto(const coap_endpoint_t *ep, const uint8_t *data, uint16_t length)
   uip_udp_packet_sendto(udp_conn, data, length, &ep->ipaddr, ep->port);
   return length;
 }
+
+#if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
+static uip_ds6_maddr_t *
+join_mcast_group(void)
+{
+  uip_ipaddr_t addr;
+  uip_ds6_maddr_t *rv;
+  const uip_ipaddr_t *default_prefix = uip_ds6_default_prefix();
+
+  /* First, set our v6 global */
+  uip_ip6addr_copy(&addr, default_prefix);
+  uip_ds6_set_addr_iid(&addr, &uip_lladdr);
+  uip_ds6_addr_add(&addr, 0, ADDR_AUTOCONF);
+
+  /*
+   * IPHC will use stateless multicast compression for this destination
+   * (M=1, DAC=0), with 32 inline bits (1E 89 AB CD)
+   */
+  uip_ip6addr(&addr, 0xFF1E,0,0,0,0,0,0x89,0xABCD);
+  rv = uip_ds6_maddr_add(&addr);
+
+  if(rv) {
+    LOG_INFO("Joined multicast group ");
+    LOG_INFO_6ADDR(&uip_ds6_maddr_lookup(&addr)->ipaddr);
+    LOG_INFO("\n");
+  }
+  return rv;
+}
+#endif
+
+
+
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(coap_engine, ev, data)
 {
   PROCESS_BEGIN();
   /* new connection with remote host */
+#if (UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL) && (WITH_GROUPCOM == 1)
+  if(join_mcast_group() == NULL) {
+    LOG_ERR("Failed to join multicast group\n");
+  }
+#endif /* (UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL) && (MAKE_WITH_GROUPCOM == 1) */
   udp_conn = udp_new(NULL, 0, NULL);
   udp_bind(udp_conn, SERVER_LISTEN_PORT);
   LOG_INFO("Listening on port %u\n", uip_ntohs(udp_conn->lport));
+
 #ifdef WITH_DTLS
   /* create new context with app-data */
   dtls_conn = udp_new(NULL, 0, NULL);
@@ -517,7 +559,6 @@ PROCESS_THREAD(coap_engine, ev, data)
 	printf("A\n");
 	#endif /* OTII_ENERGY */ 
 	process_data();
-
       }
     }
 #if defined WITH_GROUPCOM && defined WITH_OSCORE

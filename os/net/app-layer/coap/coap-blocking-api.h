@@ -68,5 +68,21 @@ PT_THREAD(coap_blocking_request
              );                                                         \
   }
 
+PT_THREAD(coap_multicast_blocking_request
+          (coap_blocking_request_state_t *blocking_state, process_event_t ev,
+           coap_endpoint_t *remote,
+           coap_message_t *request,
+           coap_blocking_response_handler_t request_callback));
+
+#define COAP_MULTICAST_BLOCKING_REQUEST(server_endpoint, request, chunk_handler)  \
+  {                                                                     \
+    static coap_blocking_request_state_t blocking_state;                          \
+    PT_SPAWN(process_pt, &blocking_state.pt,                             \
+             coap_multicast_blocking_request(&blocking_state, ev,                  \
+                                   server_endpoint,                     \
+                                   request, chunk_handler)              \
+             );                                                         \
+  }
+
 #endif /* COAP_BLOCKING_API_H_ */
 /** @} */

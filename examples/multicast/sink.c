@@ -44,6 +44,7 @@
 #include "contiki-lib.h"
 #include "contiki-net.h"
 #include "net/ipv6/multicast/uip-mcast6.h"
+#include "os/sys/node-id.h"
 
 #include <string.h>
 
@@ -56,8 +57,11 @@
 #define LOG_LEVEL LOG_LEVEL_APP
 
 #define MCAST_SINK_UDP_PORT 3001 /* Host byte order */
+#define MCAST_ROOT_UDP_PORT 3010 /* Host byte order */
+#define MAX_PAYLOAD_LEN 120
 
 static struct uip_udp_conn *sink_conn;
+static char buf[MAX_PAYLOAD_LEN];
 static uint16_t count;
 
 #if !NETSTACK_CONF_WITH_IPV6 || !UIP_CONF_ROUTER || !UIP_IPV6_MULTICAST || !UIP_CONF_IPV6_RPL
@@ -69,6 +73,20 @@ PROCESS(mcast_sink_process, "Multicast Sink");
 AUTOSTART_PROCESSES(&mcast_sink_process);
 /*---------------------------------------------------------------------------*/
 static void
+response_send(void)
+{
+  memset(buf, 0, MAX_PAYLOAD_LEN);
+  memcpy(buf, &node_id, sizeof(node_id));
+
+  PRINTF("Send Rsponse to: ");
+  PRINT6ADDR(&(UIP_IP_BUF->srcipaddr));
+  PRINTF(" Remote Port %u,", MCAST_ROOT_UDP_PORT);
+  PRINTF(" (msg=0x%08"PRIx32")", uip_ntohl(*((uint32_t *)buf)));
+  PRINTF(" %lu bytes\n", (unsigned long)sizeof(node_id));
+  uip_udp_packet_sendto(sink_conn, buf, sizeof(node_id),  &(UIP_IP_BUF->srcipaddr), UIP_HTONS(MCAST_ROOT_UDP_PORT));
+}
+/*---------------------------------------------------------------------------*/
+static void
 tcpip_handler(void)
 {
   if(uip_newdata()) {
@@ -76,6 +94,8 @@ tcpip_handler(void)
     LOG_DBG("In: [0x%08lx], TTL %u, total %u\n",
         (unsigned long)uip_ntohl((unsigned long) *((uint32_t *)(uip_appdata))),
         UIP_IP_BUF->ttl, count);
+
+    response_send();
   }
   return;
 }
