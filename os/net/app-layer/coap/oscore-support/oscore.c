@@ -48,7 +48,7 @@
 #include "coap-log.h"
 #include "oscore-crypto.h"
 
-#define LOG_MODULE "coap"
+#define LOG_MODULE "oscore"
 #define LOG_LEVEL  LOG_LEVEL_COAP
 
 uint8_t
@@ -505,6 +505,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   }
   oscore_clear_options(coap_pkt);
 #ifdef WITH_GROUPCOM
+  LOG_DBG("Group-OSCORE Processing, exiting to yeild to the Singing PT\n");
   return 0;
 #else
   uint8_t serialized_len = oscore_serializer(coap_pkt, buffer, ROLE_COAP);

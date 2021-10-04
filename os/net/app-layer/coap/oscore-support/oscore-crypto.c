@@ -45,7 +45,7 @@
 
 /* Log configuration */
 #include "coap-log.h"
-#define LOG_MODULE "coap-uip"
+#define LOG_MODULE "oscore-crypto"
 #define LOG_LEVEL  LOG_LEVEL_COAP
 
 /*OSCORE SW/HW crypto libraries*/
@@ -253,20 +253,25 @@ encryption_time_s = RTIMER_NOW();
 #endif /* PROCESSING_TIME */
   if(alg != COSE_Algorithm_AES_CCM_16_64_128 || key_len !=  COSE_algorithm_AES_CCM_16_64_128_KEY_LEN
                   || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
+    LOG_ERR("COSE Algorithm %d is not spported in conjunction with Key length %d and IV length %d\n", alg, key_len, nonce_len);
     return -5;
   }
+  LOG_INFO("Encrypt Key: [");
+  LOG_DBG_COAP_BYTES(key, key_len);
+  LOG_DBG_("]\n");
 
-/*
-printf("encrypt key\n");
-for( int i = 0; i < key_len; i++) {
-	printf("%02X", key[i]);
- } 
-printf("\n encrypt nonce\n");
-for( int i = 0; i < nonce_len; i++) {
-	printf("%02X", nonce[i]);
- } 
-printf("\n");
-*/
+  LOG_INFO("Encrypt Nonce: [");
+  LOG_DBG_COAP_BYTES(nonce, nonce_len);
+  LOG_DBG_("]\n");
+  
+  LOG_INFO("Encrypt AAD: [");
+  LOG_DBG_COAP_BYTES(aad, aad_len);
+  LOG_DBG_("]\n");
+  
+  LOG_INFO("Encrypt Buffer: [");
+  LOG_DBG_COAP_BYTES(buffer, plaintext_len);
+  LOG_DBG_("]\n");
+
 #ifdef OSCORE_WITH_HW_CRYPTO
 #ifdef CONTIKI_TARGET_ZOUL
   cc2538_ccm_star_driver.set_key(key);
@@ -335,19 +340,26 @@ decryption_time_s = RTIMER_NOW();
 
   if(alg != COSE_Algorithm_AES_CCM_16_64_128 || key_len != COSE_algorithm_AES_CCM_16_64_128_KEY_LEN
                 || nonce_len != COSE_algorithm_AES_CCM_16_64_128_IV_LEN) {
+    LOG_ERR("COSE Algorithm %d is not spported in conjunction with Key length %d and IV length %d\n", alg, key_len, nonce_len);
     return -5;
   }
-/*
- printf("decrypt key\n");
-for( int i = 0; i < key_len; i++) {
-	printf("%02X", key[i]);
- } 
-printf("\n decrypt nonce\n");
-for( int i = 0; i < nonce_len; i++) {
-	printf("%02X", nonce[i]);
- } 
-printf("\n");
-*/  
+
+  LOG_INFO("Decrypt Key: [");
+  LOG_DBG_COAP_BYTES(key, key_len);
+  LOG_DBG_("]\n");
+
+  LOG_INFO("Decrypt Nonce: [");
+  LOG_DBG_COAP_BYTES(nonce, nonce_len);
+  LOG_DBG_("]\n");
+  
+  LOG_INFO("Decrypt AAD: [");
+  LOG_DBG_COAP_BYTES(aad, aad_len);
+  LOG_DBG_("]\n");
+  
+  LOG_INFO("Decrypt Buffer: [");
+  LOG_DBG_COAP_BYTES(buffer, ciphertext_len);
+  LOG_DBG_("]\n");
+  
   uint8_t tag_buffer[COSE_algorithm_AES_CCM_16_64_128_TAG_LEN];
   uint16_t plaintext_len = ciphertext_len - COSE_algorithm_AES_CCM_16_64_128_TAG_LEN;
 #ifdef OSCORE_WITH_HW_CRYPTO
@@ -403,7 +415,8 @@ decryption_time_e = RTIMER_NOW();
   CCM_STAR.aead(nonce, buffer, plaintext_len, aad, aad_len, tag_buffer, COSE_algorithm_AES_CCM_16_64_128_TAG_LEN, 0);
 #endif /* OSCORE_WITH_HW_CRYPTO */
   if(memcmp(tag_buffer, &(buffer[plaintext_len]), COSE_algorithm_AES_CCM_16_64_128_TAG_LEN) != 0) {
-          return 0; /* Decryption failure */
+    LOG_ERR("AEAD Tag verification failed!\n");
+    return 0; /* Decryption failure */
   }
 #ifdef PROCESSING_TIME
 decryption_time_e = RTIMER_NOW();
@@ -1060,6 +1073,7 @@ queue_message_to_sign(struct process *process, uint8_t *private_key, uint8_t *pu
 		LOG_ERR("queue_message_to_sign: out of memory\n");
 		return false;
 	}
+	LOG_DBG("Queueing message to sign, len %d\n", message_len);
 	item->process = process;
 	item->private_key = private_key;
 	item->public_key = public_key;
@@ -1122,6 +1136,7 @@ queue_message_to_verify(struct process *process, uint8_t *signature, uint8_t *me
 		LOG_ERR("queue_message_to_verify: out of memory\n");
 		return false;
 	}
+	LOG_DBG("Queueing message to verify, len %d\n", message_len);
 	item->process = process;
 	item->signature = signature;
 	item->message = message;

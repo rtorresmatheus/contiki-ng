@@ -429,7 +429,7 @@ coap_serialize_message(coap_message_t *coap_pkt, uint8_t *buffer)
     #ifdef WITH_OSCORE
     if(coap_is_option(coap_pkt, COAP_OPTION_OSCORE)){
        size_t message_len = oscore_prepare_message(coap_pkt, buffer);
-       LOG_DBG("Sending OSCORE message, len %zu, full [",message_len);
+       LOG_DBG("Sending OSCORE message, len %zu: [",message_len);
        LOG_DBG_COAP_BYTES(buffer, message_len);
        LOG_DBG_("]\n");
        return message_len;
