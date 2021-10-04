@@ -685,6 +685,7 @@ oscore_init_client()
 {
   oscore_ctx_store_init();
   oscore_ep_ctx_store_init();
+  oscore_crypto_init();
 }
 
 #ifdef WITH_GROUPCOM
