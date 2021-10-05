@@ -155,9 +155,6 @@ oscore_derive_ctx(uint8_t *master_secret, uint8_t master_secret_len, uint8_t *ma
   common_ctx->alg = alg;
   common_ctx->id_context = id_context;
   common_ctx->id_context_len = id_context_len;
-#ifdef WITH_GROUPCOM 
-  common_ctx->gid = gid;
-#endif
   common_ctx->recipient_context = recipient_ctx;
   common_ctx->sender_context = sender_ctx;
 

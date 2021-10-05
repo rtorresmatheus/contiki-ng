@@ -131,22 +131,19 @@ oscore_encode_option_value(uint8_t *option_buffer, cose_encrypt0_t *cose, uint8_
     offset += cose->partial_iv_len;
   }
 #ifdef WITH_GROUPCOM
-  //Always set the 4th LSB to 1 and set kid context = Gid. kid = rid.
-  //TODO right now hardcoded to only respond the Java client!
-   
-  uint8_t kid[1] = { 0x52 }; //values taken from Java client and group-oscore-server.c
-  uint8_t gid[3] = { 0x44, 0x61, 0x6c };
-  uint8_t gid_len = 3, kid_len = 1;
-  /*Add kid_context = group id */
-  option_buffer[0] |= 0x10;
-  option_buffer[offset] = gid_len; 
-  offset++;
-  memcpy(&(option_buffer[offset]), gid, gid_len);
-  offset += gid_len;
+  if( (cose->kid_context != NULL) && (cose->kid_context_len > 0) ) {
+    /*Add kid_context = group id */
+    option_buffer[0] |= 0x10;
+    option_buffer[offset] = cose->kid_context_len; 
+    offset++;
+    memcpy(&(option_buffer[offset]), cose->kid_context, cose->kid_context_len);
+    offset += cose->kid_context_len;
+  
+  }
   /* Add KID */
   option_buffer[0] |= 0x08;
-  memcpy(&(option_buffer[offset]), kid, kid_len);
-  offset += kid_len;
+  memcpy(&(option_buffer[offset]), cose->key_id, cose->key_id_len);
+  offset += cose->key_id_len;
 #else
   if(cose->kid_context_len > 0 && cose->kid_context != NULL) {
     option_buffer[0] |= 0x10;
@@ -161,7 +158,7 @@ oscore_encode_option_value(uint8_t *option_buffer, cose_encrypt0_t *cose, uint8_
     memcpy(&(option_buffer[offset]), cose->key_id, cose->key_id_len);
     offset += cose->key_id_len;
   }
-#endif
+#endif /* WITH_GROUPCOM */
   LOG_DBG("OSCORE encoded option value, len %d, full [",offset);
   LOG_DBG_COAP_BYTES(option_buffer, offset);
   LOG_DBG_("]\n");
@@ -245,22 +242,24 @@ oscore_decode_message(coap_message_t *coap_pkt)
     uint8_t *key_id;
 #ifdef WITH_GROUPCOM
     uint8_t *group_id; /*used to extract gid from OSCORE option*/
-#endif
+#endif /* WITH_GROUPCOM */
     int key_id_len = cose_encrypt0_get_key_id(cose, &key_id);
     ctx = oscore_find_ctx_by_rid(key_id, key_id_len);
     if(ctx == NULL) {
-      LOG_DBG_("OSCORE Security Context not found.\n");
+      LOG_ERR("OSCORE Security Context not found for KID [");
+      LOG_ERR_COAP_BYTES(key_id, key_id_len);
+      LOG_ERR_("]\n");
       coap_error_message = "Security context not found";
       return UNAUTHORIZED_4_01;
     }
 #ifdef WITH_GROUPCOM
     uint8_t gid_len = cose_encrypt0_get_kid_context(cose, &group_id);
     if(gid_len == 0) {
-      LOG_DBG_("Gid length is 0.\n");
+      LOG_ERR("Gid length is 0.\n");
       return UNAUTHORIZED_4_01;
     } 
-    else if (*(ctx->gid) != *(group_id)) {
-      LOG_DBG_("Received gid does not match.\n");    
+    else if ( memcmp(ctx->id_context, group_id, gid_len) != 0) {
+      LOG_ERR("Received gid does not match.\n");    
       return UNAUTHORIZED_4_01;
     }
     else {
@@ -268,7 +267,7 @@ oscore_decode_message(coap_message_t *coap_pkt)
        LOG_DBG_COAP_BYTES(group_id, gid_len);
        LOG_DBG_("]\n");
     }
-#endif    
+#endif /* WITH_GROUPCOM */   
     /*4 Verify the ‘Partial IV’ parameter using the Replay Window, as described in Section 7.4. */
     if(!oscore_validate_sender_seq(ctx->recipient_context, cose)) {
       LOG_DBG_("OSCORE Replayed or old message\n");
@@ -456,6 +455,17 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
     return PACKET_SERIALIZATION_ERROR;
   }
   uint8_t option_value_len = 0;
+#ifdef WITH_GROUPCOM
+  if(coap_is_request(coap_pkt)){
+
+  LOG_ERR("setting kid context  [");
+      LOG_ERR_COAP_BYTES(ctx->id_context, ctx->id_context_len);
+      LOG_ERR_("]\n");
+
+    cose_encrypt0_set_kid_context(cose, ctx->id_context, ctx->id_context_len);
+  }
+  //TODO add GROUP ID here
+#endif /* WITH_GROUPCOM */
   if(coap_is_request(coap_pkt)){
 	option_value_len = oscore_encode_option_value(option_value_buffer, cose, 1);
   } else { //Partial IV shall NOT be included in responses
@@ -463,7 +473,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
 	option_value_len = oscore_encode_option_value(option_value_buffer, cose, 1);
 #else	
 	option_value_len = oscore_encode_option_value(option_value_buffer, cose, 0);
-#endif
+#endif /* WITH_GROUPCOM */
   }
   
   coap_set_header_object_security(coap_pkt, option_value_buffer, option_value_len);
@@ -490,13 +500,13 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   cose_sign1_set_ciphertext(sign, sign_encoded_buffer, sign_encoded_len);
   /* Queue message to sign */
   cose_sign1_sign(sign); //don't care about the result, it will be in progress
-  
   coap_set_payload(coap_pkt, content_buffer, total_len);
 #else
   coap_set_payload(coap_pkt, content_buffer, ciphertext_len);
 #endif /* WITH_GROUPCOM */
 
-  
+  //TODO
+  uint8_t is_request = coap_is_request(coap_pkt);
   /* Overwrite the CoAP code. */
   if(coap_is_request(coap_pkt)) {
     coap_pkt->code = COAP_POST;
@@ -505,8 +515,12 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   }
   oscore_clear_options(coap_pkt);
 #ifdef WITH_GROUPCOM
+  if(is_request){ 
+    return oscore_serializer(coap_pkt, buffer, ROLE_COAP);
+  } else {
   LOG_DBG("Group-OSCORE Processing, exiting to yeild to the Singing PT\n");
-  return 0;
+    return 0;
+  }
 #else
   uint8_t serialized_len = oscore_serializer(coap_pkt, buffer, ROLE_COAP);
 

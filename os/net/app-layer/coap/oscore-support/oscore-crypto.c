@@ -72,7 +72,7 @@ static uint8_t sha2_hash(const uint8_t *message, size_t len, uint8_t *hash);
 #include "dtls-hmac.h"
 
 #endif /*OSCORE_WITH_HW_CRYPTO*/
-
+coap_message_t *outgoing_request;
 
 /*Settings for group OSCORE*/
 #if WITH_GROUPCOM == 1
@@ -1106,7 +1106,7 @@ PROCESS_THREAD(signer, ev, data)
 	while(1) {
 		PROCESS_YIELD_UNTIL(!queue_is_empty(messages_to_sign));
 		while(!queue_is_empty(messages_to_sign)){
-			static messages_to_sign_entry_t *item;
+                	static messages_to_sign_entry_t *item;
 			item = (messages_to_sign_entry_t *) queue_dequeue(messages_to_sign);
 			static sign_state_t state;
 			state.process = &signer;
@@ -1114,6 +1114,7 @@ PROCESS_THREAD(signer, ev, data)
 #if defined OSCORE_WITH_HW_CRYPTO && defined CONTIKI_TARGET_ZOUL
 			item->result = state.ecc_sign_state.result;
 #endif /* OSCORE_WITH_HW_CRYPTO && CONTIKI_TARGET_ZOUL */
+
  			if(process_post(PROCESS_BROADCAST, pe_message_signed, item) != PROCESS_ERR_OK){ 
 				LOG_ERR("Failed to post pe_message_signed to %s\n", item->process->name);
 			} else {

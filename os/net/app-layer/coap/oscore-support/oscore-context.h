@@ -119,7 +119,6 @@ struct oscore_ctx_t {
   uint8_t id_context_len;
   uint8_t alg;
 #ifdef WITH_GROUPCOM
-  uint8_t *gid;
   oscore_recipient_ctx_t *recipient_chain;
   int8_t counter_signature_algorithm;
   int8_t counter_signature_parameters;
