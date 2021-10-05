@@ -51,7 +51,7 @@
 #define LOG_MODULE "oscore"
 #define LOG_LEVEL  LOG_LEVEL_COAP
 
-uint8_t
+  uint8_t
 coap_is_request(coap_message_t *coap_pkt)
 {
   if(coap_pkt->code >= COAP_GET && coap_pkt->code <= COAP_DELETE) {
@@ -60,7 +60,7 @@ coap_is_request(coap_message_t *coap_pkt)
     return 0;
   }
 }
-uint8_t
+  uint8_t
 oscore_protected_request(void *request)
 {
   if(request != NULL) {
@@ -71,31 +71,31 @@ oscore_protected_request(void *request)
   }
   return 0;
 }
-void
+  void
 oscore_protect_resource(coap_resource_t *resource)
 {
   resource->oscore_protected = 1;
 }
-uint8_t
+  uint8_t
 u64tob(uint64_t value, uint8_t *buffer)
 {
   memset(buffer, 0, 8);
   uint8_t length = 0;
   for( int i = 0; i < 8; i++){
-        uint8_t temp = (value >> (8*i)) & 0xFF;
+    uint8_t temp = (value >> (8*i)) & 0xFF;
 
-        if( temp != 0){
-                length = i+1;
-        }
+    if( temp != 0){
+      length = i+1;
+    }
   }
 
   for ( int i = 0; i < length; i++){
-          buffer[length - i -1] = (value >> (8*i)) & 0xFF;
+    buffer[length - i -1] = (value >> (8*i)) & 0xFF;
   }  
   return length == 0 ? 1 : length;
 
 }
-uint64_t
+  uint64_t
 btou64(uint8_t *bytes, size_t len)
 {
   uint8_t buffer[8];
@@ -117,12 +117,12 @@ btou64(uint8_t *bytes, size_t len)
 
   return num;
 }
-int
+  int
 oscore_encode_option_value(uint8_t *option_buffer, cose_encrypt0_t *cose, uint8_t include_partial_iv)
 {
   uint8_t offset = 1;
   if(cose->partial_iv_len > 5){
-	  return 0;
+    return 0;
   }
   option_buffer[0] = 0;
   if(cose->partial_iv_len > 0 && cose->partial_iv != NULL && include_partial_iv) {
@@ -138,7 +138,7 @@ oscore_encode_option_value(uint8_t *option_buffer, cose_encrypt0_t *cose, uint8_
     offset++;
     memcpy(&(option_buffer[offset]), cose->kid_context, cose->kid_context_len);
     offset += cose->kid_context_len;
-  
+
   }
   /* Add KID */
   option_buffer[0] |= 0x08;
@@ -164,17 +164,17 @@ oscore_encode_option_value(uint8_t *option_buffer, cose_encrypt0_t *cose, uint8_
   LOG_DBG_("]\n");
 
   if(offset == 1 && option_buffer[0] == 0) { /* If option_value is 0x00 it should be empty. */
-	  return 0;
+    return 0;
   }
   return offset;
 }
 
-coap_status_t
+  coap_status_t
 oscore_decode_option_value(uint8_t *option_value, int option_len, cose_encrypt0_t *cose)
 {
-  
+
   if(option_len == 0){
-        return NO_ERROR;
+    return NO_ERROR;
   } else if( option_len > 255 || option_len < 0 || (option_value[0] & 0x06) == 6 || (option_value[0] & 0x07) == 7 || (option_value[0] & 0xE0) != 0) {
     return BAD_OPTION_4_02;
   }
@@ -184,7 +184,7 @@ oscore_decode_option_value(uint8_t *option_value, int option_len, cose_encrypt0_
     return BAD_OPTION_4_02;
   }
 #endif
-  
+
   uint8_t partial_iv_len = (option_value[0] & 0x07);
   uint8_t offset = 1;
   if(partial_iv_len != 0) {    
@@ -195,7 +195,7 @@ oscore_decode_option_value(uint8_t *option_value, int option_len, cose_encrypt0_
     cose_encrypt0_set_partial_iv(cose, &(option_value[offset]), partial_iv_len);
     offset += partial_iv_len;
   }
-  
+
   /* If h-flag is set KID-Context field is present. */
   if((option_value[0] & 0x10) != 0) {
     uint8_t kid_context_len = option_value[offset];
@@ -218,7 +218,7 @@ oscore_decode_option_value(uint8_t *option_value, int option_len, cose_encrypt0_
   return NO_ERROR;
 }
 /* Decodes a OSCORE message and passes it on to the COAP engine. */
-coap_status_t
+  coap_status_t
 oscore_decode_message(coap_message_t *coap_pkt)
 {
   cose_encrypt0_t cose[1];
@@ -230,13 +230,13 @@ oscore_decode_message(coap_message_t *coap_pkt)
   cose_sign1_t sign[1];
   cose_sign1_init(sign);
 #endif /*WITH_GROUPCOM*/
- /* Options are discarded later when they are overwritten. This should be improved */
+  /* Options are discarded later when they are overwritten. This should be improved */
   coap_status_t ret = oscore_decode_option_value(coap_pkt->object_security, coap_pkt->object_security_len, cose);
 
   if( ret != NO_ERROR){
-	 LOG_DBG_("OSCORE option value could not be parsed.\n");
-	 coap_error_message = "OSCORE option could not be parsed.";
-	 return ret;
+    LOG_DBG_("OSCORE option value could not be parsed.\n");
+    coap_error_message = "OSCORE option could not be parsed.";
+    return ret;
   }
   if(coap_is_request(coap_pkt)) {
     uint8_t *key_id;
@@ -263,9 +263,9 @@ oscore_decode_message(coap_message_t *coap_pkt)
       return UNAUTHORIZED_4_01;
     }
     else {
-       LOG_DBG("Group-ID, len %d, full [",gid_len);
-       LOG_DBG_COAP_BYTES(group_id, gid_len);
-       LOG_DBG_("]\n");
+      LOG_DBG("Group-ID, len %d, full [",gid_len);
+      LOG_DBG_COAP_BYTES(group_id, gid_len);
+      LOG_DBG_("]\n");
     }
 #endif /* WITH_GROUPCOM */   
     /*4 Verify the ‘Partial IV’ parameter using the Replay Window, as described in Section 7.4. */
@@ -296,11 +296,11 @@ oscore_decode_message(coap_message_t *coap_pkt)
   size_t aad_len = oscore_prepare_aad(coap_pkt, cose, aad_buffer, 0);
   cose_encrypt0_set_aad(cose, aad_buffer, aad_len);
   cose_encrypt0_set_alg(cose, ctx->alg);
-  
+
   oscore_generate_nonce(cose, coap_pkt, nonce_buffer, 13);
   cose_encrypt0_set_nonce(cose, nonce_buffer, 13);
-  
-uint16_t encrypt_len = coap_pkt->payload_len;
+
+  uint16_t encrypt_len = coap_pkt->payload_len;
 #ifdef WITH_GROUPCOM
   if (ctx->mode == OSCORE_GROUP){
     encrypt_len = coap_pkt->payload_len - ES256_SIGNATURE_LEN;
@@ -323,18 +323,18 @@ uint16_t encrypt_len = coap_pkt->payload_len;
   }
 #ifdef WITH_GROUPCOM
   if (ctx->mode == OSCORE_GROUP){
-  /* verify signature     */
-     uint8_t *signature_ptr = coap_pkt->payload + encrypt_len;//address of the signature (after the ciphertext)
-     uint8_t sig_buffer[aad_len + encrypt_len + 24];
-     //TODO optimize so we dont have to do this twice
-     aad_len = oscore_prepare_int(ctx, cose, coap_pkt->object_security, coap_pkt->object_security_len,aad_buffer);
- 
-     oscore_populate_sign(coap_is_request(coap_pkt), sign, ctx);
-     size_t sig_len = oscore_prepare_sig_structure(sig_buffer, 
-                  aad_buffer, aad_len, tmp_buffer, encrypt_len);
-     cose_sign1_set_signature(sign, signature_ptr);
-     cose_sign1_set_ciphertext(sign, sig_buffer, sig_len);
-     cose_sign1_verify(sign);//we do not care about the response; the thing will be in progress
+    /* verify signature     */
+    uint8_t *signature_ptr = coap_pkt->payload + encrypt_len;//address of the signature (after the ciphertext)
+    uint8_t sig_buffer[aad_len + encrypt_len + 24];
+    //TODO optimize so we dont have to do this twice
+    aad_len = oscore_prepare_int(ctx, cose, coap_pkt->object_security, coap_pkt->object_security_len,aad_buffer);
+
+    oscore_populate_sign(coap_is_request(coap_pkt), sign, ctx);
+    size_t sig_len = oscore_prepare_sig_structure(sig_buffer, 
+        aad_buffer, aad_len, tmp_buffer, encrypt_len);
+    cose_sign1_set_signature(sign, signature_ptr);
+    cose_sign1_set_ciphertext(sign, sig_buffer, sig_len);
+    cose_sign1_verify(sign);//we do not care about the response; the thing will be in progress
   } 
 #endif /* WITH_GROUPCOM */
 
@@ -343,7 +343,7 @@ uint16_t encrypt_len = coap_pkt->payload_len;
   return status;
 }
 
-uint8_t
+  uint8_t
 oscore_populate_cose(coap_message_t *pkt, cose_encrypt0_t *cose, oscore_ctx_t *ctx, uint8_t sending)
 {
   cose_encrypt0_set_alg(cose, ctx->alg);
@@ -351,13 +351,13 @@ oscore_populate_cose(coap_message_t *pkt, cose_encrypt0_t *cose, oscore_ctx_t *c
   uint8_t partial_iv_len;
 
 #ifdef WITH_GROUPCOM
-    if(sending){//recent_seq is the one that actually gets updated
-      partial_iv_len = u64tob(ctx->recipient_context->recent_seq, partial_iv_buffer);
-      cose_encrypt0_set_partial_iv(cose, partial_iv_buffer, partial_iv_len);
-      cose_encrypt0_set_key_id(cose, ctx->sender_context->sender_id, ctx->sender_context->sender_id_len);
-      cose_encrypt0_set_key(cose, ctx->sender_context->sender_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
+  if(sending){//recent_seq is the one that actually gets updated
+    partial_iv_len = u64tob(ctx->recipient_context->recent_seq, partial_iv_buffer);
+    cose_encrypt0_set_partial_iv(cose, partial_iv_buffer, partial_iv_len);
+    cose_encrypt0_set_key_id(cose, ctx->sender_context->sender_id, ctx->sender_context->sender_id_len);
+    cose_encrypt0_set_key(cose, ctx->sender_context->sender_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
   } else {
-  
+
     cose_encrypt0_set_key_id(cose, ctx->recipient_context->recipient_id, ctx->recipient_context->recipient_id_len);
     cose_encrypt0_set_key(cose, ctx->recipient_context->recipient_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
   }
@@ -398,7 +398,7 @@ uint8_t option_value_buffer[15];
 #endif /* WITH_GROUPCOM */
 
 /* Prepares a new OSCORE message, returns the size of the message. */
-size_t
+  size_t
 oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
 {
   cose_encrypt0_t cose[1];
@@ -414,7 +414,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
 #endif /* not WITH_GROUPCOM */
   uint8_t aad_buffer[35];
   uint8_t nonce_buffer[COSE_algorithm_AES_CCM_16_64_128_IV_LEN];
-/*  1 Retrieve the Sender Context associated with the target resource. */
+  /*  1 Retrieve the Sender Context associated with the target resource. */
   oscore_ctx_t *ctx = coap_pkt->security_context;
   if(ctx == NULL) {
     LOG_DBG_("No context in OSCORE!\n");
@@ -422,7 +422,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   }
   oscore_populate_cose(coap_pkt, cose, coap_pkt->security_context, 1);
 
-/* 2 Compose the AAD and the plaintext, as described in Sections 5.3 and 5.4.*/
+  /* 2 Compose the AAD and the plaintext, as described in Sections 5.3 and 5.4.*/
   uint8_t plaintext_len = oscore_serializer(coap_pkt, content_buffer, ROLE_CONFIDENTIAL);
   if( plaintext_len > COAP_MAX_CHUNK_SIZE){
     LOG_DBG_("OSCORE Message to large to process.\n");
@@ -430,17 +430,17 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   }
 
   cose_encrypt0_set_content(cose, content_buffer, plaintext_len);
-  
+
   uint8_t aad_len = oscore_prepare_aad(coap_pkt, cose, aad_buffer, 1);
   cose_encrypt0_set_aad(cose, aad_buffer, aad_len);
- /*3 Compute the AEAD nonce as described in Section 5.2*/ 
+  /*3 Compute the AEAD nonce as described in Section 5.2*/ 
   oscore_generate_nonce(cose, coap_pkt, nonce_buffer, COSE_algorithm_AES_CCM_16_64_128_IV_LEN);
   cose_encrypt0_set_nonce(cose, nonce_buffer, COSE_algorithm_AES_CCM_16_64_128_IV_LEN);
-  
+
   if(coap_is_request(coap_pkt)){
     if(!oscore_set_exchange(coap_pkt->token, coap_pkt->token_len, ctx->sender_context->seq, ctx)){
-	LOG_DBG_("OSCORE Could not store exchange.\n");
-    	return PACKET_SERIALIZATION_ERROR;
+      LOG_DBG("OSCORE Could not store exchange.\n");
+      return PACKET_SERIALIZATION_ERROR;
     }
     oscore_increment_sender_seq(ctx);
   }
@@ -451,31 +451,31 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
 
   int ciphertext_len = cose_encrypt0_encrypt(cose);
   if( ciphertext_len < 0){
-    LOG_DBG_("OSCORE internal error %d.\n", ciphertext_len);
+    LOG_DBG("OSCORE internal error %d.\n", ciphertext_len);
     return PACKET_SERIALIZATION_ERROR;
   }
   uint8_t option_value_len = 0;
 #ifdef WITH_GROUPCOM
   if(coap_is_request(coap_pkt)){
 
-  LOG_ERR("setting kid context  [");
-      LOG_ERR_COAP_BYTES(ctx->id_context, ctx->id_context_len);
-      LOG_ERR_("]\n");
+    LOG_DBG("Setting kid context:  [");
+    LOG_DBG_COAP_BYTES(ctx->id_context, ctx->id_context_len);
+    LOG_DBG_("]\n");
 
     cose_encrypt0_set_kid_context(cose, ctx->id_context, ctx->id_context_len);
   }
   //TODO add GROUP ID here
 #endif /* WITH_GROUPCOM */
   if(coap_is_request(coap_pkt)){
-	option_value_len = oscore_encode_option_value(option_value_buffer, cose, 1);
+    option_value_len = oscore_encode_option_value(option_value_buffer, cose, 1);
   } else { //Partial IV shall NOT be included in responses
 #ifdef WITH_GROUPCOM
-	option_value_len = oscore_encode_option_value(option_value_buffer, cose, 1);
+    option_value_len = oscore_encode_option_value(option_value_buffer, cose, 1);
 #else	
-	option_value_len = oscore_encode_option_value(option_value_buffer, cose, 0);
+    option_value_len = oscore_encode_option_value(option_value_buffer, cose, 0);
 #endif /* WITH_GROUPCOM */
   }
-  
+
   coap_set_header_object_security(coap_pkt, option_value_buffer, option_value_len);
 
 #ifdef WITH_GROUPCOM
@@ -489,13 +489,13 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
     cose_encrypt0_set_key_id(cose, ctx->recipient_context->recipient_id, ctx->recipient_context->recipient_id_len);
   }
   //prepare external_aad structure with algs, params, etc. to later populate the sig_structure
-  
+
   aad_len = oscore_prepare_int(ctx, cose, coap_pkt->object_security, coap_pkt->object_security_len,aad_buffer);
-   
+
   size_t sign_encoded_len = oscore_prepare_sig_structure(sign_encoded_buffer, 
-               aad_buffer, aad_len, cose->content, ciphertext_len); 
+      aad_buffer, aad_len, cose->content, ciphertext_len); 
   memset(&(content_buffer[ciphertext_len]), 0xAA, 64);
-//printf("SIGNATURE SHOULD GO HERE %p \n", &(content_buffer[ciphertext_len]));
+  //printf("SIGNATURE SHOULD GO HERE %p \n", &(content_buffer[ciphertext_len]));
   cose_sign1_set_signature(sign, &(content_buffer[ciphertext_len]));
   cose_sign1_set_ciphertext(sign, sign_encoded_buffer, sign_encoded_len);
   /* Queue message to sign */
@@ -518,7 +518,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   if(is_request){ 
     return oscore_serializer(coap_pkt, buffer, ROLE_COAP);
   } else {
-  LOG_DBG("Group-OSCORE Processing, exiting to yeild to the Singing PT\n");
+    LOG_DBG("Group-OSCORE Processing, exiting to yeild to the Singing PT\n");
     return 0;
   }
 #else
@@ -529,7 +529,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
 }
 
 /* Creates and sets External AAD */
-size_t
+  size_t
 oscore_prepare_aad(coap_message_t *coap_pkt, cose_encrypt0_t *cose, uint8_t *buffer, uint8_t sending)
 {
   uint8_t external_aad_buffer[25];
@@ -550,21 +550,34 @@ oscore_prepare_aad(coap_message_t *coap_pkt, cose_encrypt0_t *cose, uint8_t *buf
   } else {
     external_aad_len += cbor_put_array(&external_aad_ptr, 1); /* Algoritms array */
     external_aad_len += cbor_put_unsigned(&external_aad_ptr, (coap_pkt->security_context->alg)); /* Algorithm */
-}
+  }
 #else 
-    external_aad_len += cbor_put_array(&external_aad_ptr, 1); /* Algoritms array */
-    external_aad_len += cbor_put_unsigned(&external_aad_ptr, (coap_pkt->security_context->alg)); /* Algorithm */
+  external_aad_len += cbor_put_array(&external_aad_ptr, 1); /* Algoritms array */
+  external_aad_len += cbor_put_unsigned(&external_aad_ptr, (coap_pkt->security_context->alg)); /* Algorithm */
 #endif /*"WITH_GROUPCOM */
 
   /*When sending responses. */
   if( !coap_is_request(coap_pkt)) { 
-    external_aad_len += cbor_put_bytes(&external_aad_ptr, coap_pkt->security_context->recipient_context->recipient_id,  coap_pkt->security_context->recipient_context->recipient_id_len);
+    if(sending){
+      LOG_DBG("Case A.1 writing key ID len %d, full [", coap_pkt->security_context->recipient_context->recipient_id_len);
+      LOG_DBG_COAP_BYTES( coap_pkt->security_context->recipient_context->recipient_id, coap_pkt->security_context->recipient_context->recipient_id_len);
+      LOG_DBG_("]\n");
+      external_aad_len += cbor_put_bytes(&external_aad_ptr, coap_pkt->security_context->recipient_context->recipient_id,  coap_pkt->security_context->recipient_context->recipient_id_len);
+    } else {
+      LOG_DBG("Case A.2 writing key ID len %d, full [", coap_pkt->security_context->sender_context->sender_id_len);
+      LOG_DBG_COAP_BYTES( coap_pkt->security_context->sender_context->sender_id, coap_pkt->security_context->sender_context->sender_id_len);
+      LOG_DBG_("]\n");
+      external_aad_len += cbor_put_bytes(&external_aad_ptr, coap_pkt->security_context->sender_context->sender_id,  coap_pkt->security_context->sender_context->sender_id_len);
+    }
   } else {	 
+    LOG_DBG("CASE Bwriting writing key ID len %d, full [",cose->key_id_len);
+    LOG_DBG_COAP_BYTES(cose->key_id, cose->key_id_len);
+    LOG_DBG_("]\n");
     external_aad_len += cbor_put_bytes(&external_aad_ptr, cose->key_id, cose->key_id_len);
   }
   external_aad_len += cbor_put_bytes(&external_aad_ptr, cose->partial_iv, cose->partial_iv_len);  
   external_aad_len += cbor_put_bytes(&external_aad_ptr, NULL, 0); /* Put integrety protected option, at present there are none. */
- 
+
   uint8_t ret = 0;
   char* encrypt0 = "Encrypt0";
   /* Begin creating the AAD */
@@ -573,11 +586,11 @@ oscore_prepare_aad(coap_message_t *coap_pkt, cose_encrypt0_t *cose, uint8_t *buf
   ret += cbor_put_bytes(&buffer, NULL, 0);
   ret += cbor_put_bytes(&buffer, external_aad_buffer, external_aad_len);  
 
- 
+
   return ret;
 }
 /* Creates Nonce */
-void
+  void
 oscore_generate_nonce(cose_encrypt0_t *ptr, coap_message_t *coap_pkt, uint8_t *buffer, uint8_t size)
 {
   memset(buffer, 0, size);
@@ -590,7 +603,7 @@ oscore_generate_nonce(cose_encrypt0_t *ptr, coap_message_t *coap_pkt, uint8_t *b
   }
 }
 /*Remove all protected options */
-void
+  void
 oscore_clear_options(coap_message_t *coap_pkt)
 {
   coap_pkt->options[COAP_OPTION_IF_MATCH / COAP_OPTION_MAP_SIZE] &= ~(1 << (COAP_OPTION_IF_MATCH % COAP_OPTION_MAP_SIZE));
@@ -613,27 +626,27 @@ oscore_clear_options(coap_message_t *coap_pkt)
   /* Size1 should be duplicated */
 }
 /*Return 1 if OK, Error code otherwise */
-uint8_t
+  uint8_t
 oscore_validate_sender_seq(oscore_recipient_ctx_t *ctx, cose_encrypt0_t *cose)
 {
   int64_t incomming_seq = btou64(cose->partial_iv, cose->partial_iv_len);
-//todo add LOG_DBG here 
+  //todo add LOG_DBG here 
   LOG_DBG_("Incomming SEQ %" PRIi64 "\n", incomming_seq);
   ctx->rollback_largest_seq = ctx->largest_seq;
   ctx->rollback_sliding_window = ctx->sliding_window;
 
-   /* Special case since we do not use unisgned int for seq */
- /* if(!ctx->initialized) {
-      ctx->initialized = 1;
-      int shift = incomming_seq - ctx->largest_seq;
-      ctx->sliding_window = ctx->sliding_window << shift;
-      ctx->sliding_window = ctx->sliding_window | 1;
-      ctx->largest_seq = incomming_seq;
-      ctx->recent_seq = incomming_seq;
-      return 1;
-  }
-  */
-   if(incomming_seq >= OSCORE_SEQ_MAX) {
+  /* Special case since we do not use unisgned int for seq */
+  /* if(!ctx->initialized) {
+     ctx->initialized = 1;
+     int shift = incomming_seq - ctx->largest_seq;
+     ctx->sliding_window = ctx->sliding_window << shift;
+     ctx->sliding_window = ctx->sliding_window | 1;
+     ctx->largest_seq = incomming_seq;
+     ctx->recent_seq = incomming_seq;
+     return 1;
+     }
+   */
+  if(incomming_seq >= OSCORE_SEQ_MAX) {
     LOG_WARN("OSCORE Replay protection, SEQ larger than SEQ_MAX.\n");
     return 0;
   }
@@ -645,8 +658,8 @@ oscore_validate_sender_seq(oscore_recipient_ctx_t *ctx, cose_encrypt0_t *cose)
     ctx->sliding_window = ctx->sliding_window | 1;
     ctx->largest_seq = incomming_seq;
   } else if(incomming_seq == ctx->largest_seq) {
-      LOG_WARN("OSCORE Replay protection, replayed SEQ.\n");
-      return 0;
+    LOG_WARN("OSCORE Replay protection, replayed SEQ.\n");
+    return 0;
   } else { /* seq < recipient_seq */
     if(incomming_seq + ctx->replay_window_size < ctx->largest_seq) {
       LOG_WARN("OSCORE Replay protection, SEQ outside of replay window.\n");
@@ -658,7 +671,7 @@ oscore_validate_sender_seq(oscore_recipient_ctx_t *ctx, cose_encrypt0_t *cose)
     uint32_t verifier = ctx->sliding_window & pattern;
     verifier = verifier >> shift;
     if(verifier == 1) {
-	      LOG_WARN("OSCORE Replay protection, replayed SEQ.\n");
+      LOG_WARN("OSCORE Replay protection, replayed SEQ.\n");
       return 0;
     }
     ctx->sliding_window = ctx->sliding_window | pattern;
@@ -667,7 +680,7 @@ oscore_validate_sender_seq(oscore_recipient_ctx_t *ctx, cose_encrypt0_t *cose)
   return 1;
 }
 /* Return 0 if SEQ MAX, return 1 if OK */
-uint8_t
+  uint8_t
 oscore_increment_sender_seq(oscore_ctx_t *ctx)
 {
   ctx->sender_context->seq++;
@@ -679,14 +692,14 @@ oscore_increment_sender_seq(oscore_ctx_t *ctx)
   }
 }
 /* Restore the sequence number and replay-window to the previous state. This is to be used when decryption fail. */
-void
+  void
 oscore_roll_back_seq(oscore_recipient_ctx_t *ctx)
 {
-    ctx->sliding_window = ctx->rollback_sliding_window;
-    ctx->largest_seq = ctx->rollback_largest_seq;
+  ctx->sliding_window = ctx->rollback_sliding_window;
+  ctx->largest_seq = ctx->rollback_largest_seq;
 }
 /* Initialize the security_context storage and the protected resource storage. */
-void
+  void
 oscore_init_server()
 {
   oscore_ctx_store_init();
@@ -694,7 +707,7 @@ oscore_init_server()
   oscore_crypto_init();
 }
 /* Initialize the security_context storage, the token - seq association storrage and the URI - security_context association storage. */
-void
+  void
 oscore_init_client()
 {
   oscore_ctx_store_init();
@@ -704,11 +717,11 @@ oscore_init_client()
 
 #ifdef WITH_GROUPCOM
 /* Sets alg and keys in COSE SIGN  */
-void
+  void
 oscore_populate_sign(uint8_t coap_is_request, cose_sign1_t *sign, oscore_ctx_t *ctx)
 {
   cose_sign1_set_alg(sign, ctx->counter_signature_algorithm,
-                     ctx->counter_signature_parameters);
+      ctx->counter_signature_parameters);
   if (coap_is_request){
     cose_sign1_set_private_key(sign, ctx->recipient_context->private_key); 
     cose_sign1_set_public_key(sign, ctx->recipient_context->public_key);
@@ -720,10 +733,10 @@ oscore_populate_sign(uint8_t coap_is_request, cose_sign1_t *sign, oscore_ctx_t *
 //
 // oscore_prepare_sig_structure
 // creates and sets structure to be signed
-size_t
+  size_t
 oscore_prepare_sig_structure(uint8_t *sig_ptr,
-uint8_t *aad_buffer, uint8_t aad_len,
-uint8_t *text, uint8_t text_len)
+    uint8_t *aad_buffer, uint8_t aad_len,
+    uint8_t *text, uint8_t text_len)
 {
   uint8_t sig_len = 0;
   char countersig0[] = "CounterSignature0";
@@ -732,12 +745,12 @@ uint8_t *text, uint8_t text_len)
   sig_len += cbor_put_bytes(&sig_ptr, NULL, 0);
   sig_len += cbor_put_bytes(&sig_ptr, NULL, 0);
   sig_len += cbor_put_bytes(&sig_ptr, 
-                  aad_buffer, aad_len); 
+      aad_buffer, aad_len); 
   sig_len += cbor_put_bytes(&sig_ptr, text, text_len); 
   return sig_len;
 }
 
-size_t
+  size_t
 oscore_prepare_int(oscore_ctx_t *ctx, cose_encrypt0_t *cose,     uint8_t *oscore_option, size_t oscore_option_len, uint8_t *external_aad_ptr)
 {
   size_t external_aad_len = 0;
@@ -749,34 +762,34 @@ oscore_prepare_int(oscore_ctx_t *ctx, cose_encrypt0_t *cose,     uint8_t *oscore
   external_aad_len += cbor_put_unsigned(&external_aad_ptr, 1);
   /* Version, always "1" for this version of the draft */
   if (ctx->mode == OSCORE_SINGLE){
- /* Algoritms array with one item*/
+    /* Algoritms array with one item*/
     external_aad_len += cbor_put_array(&external_aad_ptr, 1); 
-  /* Encryption Algorithm   */
+    /* Encryption Algorithm   */
     external_aad_len += 
-           cbor_put_unsigned(&external_aad_ptr, (ctx->alg));
+      cbor_put_unsigned(&external_aad_ptr, (ctx->alg));
   } else {  /* ctx-> mode == OSCORE_GROUP */
-  /* Algoritms array with 4 items */
-     external_aad_len += cbor_put_array(&external_aad_ptr, 4);
-  /* Encryption Algorithm   */
-     external_aad_len += cbor_put_unsigned(&external_aad_ptr, (ctx->alg));     
-  /* signature Algorithm */
-     external_aad_len += cbor_put_negative(&external_aad_ptr, 
-                             -(ctx->counter_signature_algorithm) );
-     external_aad_len += cbor_put_unsigned(&external_aad_ptr, 
-                             ctx->counter_signature_parameters);
-  /* Signature algorithm array */
-     external_aad_len += cbor_put_array(&external_aad_ptr, 2);
-     external_aad_len += cbor_put_unsigned(&external_aad_ptr, 26); 
-     external_aad_len += cbor_put_unsigned(&external_aad_ptr, 1);
-/* fill in correct 1 and 6  */
+    /* Algoritms array with 4 items */
+    external_aad_len += cbor_put_array(&external_aad_ptr, 4);
+    /* Encryption Algorithm   */
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, (ctx->alg));     
+    /* signature Algorithm */
+    external_aad_len += cbor_put_negative(&external_aad_ptr, 
+        -(ctx->counter_signature_algorithm) );
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 
+        ctx->counter_signature_parameters);
+    /* Signature algorithm array */
+    external_aad_len += cbor_put_array(&external_aad_ptr, 2);
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 26); 
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 1);
+    /* fill in correct 1 and 6  */
   }
   //Request Key ID should go here
   external_aad_len += cbor_put_bytes(&external_aad_ptr, cose->key_id, cose->key_id_len);
   external_aad_len += cbor_put_bytes(&external_aad_ptr, cose->partial_iv, cose->partial_iv_len);
   external_aad_len += cbor_put_bytes(&external_aad_ptr, NULL, 0); 
-if(oscore_option != NULL && oscore_option_len > 0){
-  external_aad_len += cbor_put_bytes(&external_aad_ptr, oscore_option, oscore_option_len);
-}
+  if(oscore_option != NULL && oscore_option_len > 0){
+    external_aad_len += cbor_put_bytes(&external_aad_ptr, oscore_option, oscore_option_len);
+  }
   /* Put integrity protected option, at present there are none. */
   return external_aad_len;
 }
