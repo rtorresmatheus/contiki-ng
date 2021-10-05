@@ -217,8 +217,13 @@ PT_THREAD(coap_multicast_blocking_request
           state->
           transaction->
           message);
+      #ifdef WITH_OSCORE
+      PT_YIELD_UNTIL(&blocking_state->pt, ev == pe_message_signed);
+      coap_send_multicast_transaction(state->transaction);
+      #else 
       coap_send_multicast_transaction(state->transaction);
       LOG_DBG("Requested #%"PRIu32" (MID %u)\n", state->block_num, request->mid);
+      #endif /* WITH_OSCORE */
       
       PT_YIELD_UNTIL(&blocking_state->pt, ev == PROCESS_EVENT_POLL);
       do {

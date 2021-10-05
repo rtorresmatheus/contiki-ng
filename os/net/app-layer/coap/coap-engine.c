@@ -199,14 +199,16 @@ int coap_receive(const coap_endpoint_t *src,
   coap_handler_status_t status;
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
   coap_status_code = in_status;
-#ifdef OSCORE_WITH_HW_CRYPTO
-#ifdef CONTIKI_TARGET_ZOUL
+//#ifdef OSCORE_WITH_HW_CRYPTO
+//#ifdef CONTIKI_TARGET_ZOUL
+    LOG_DBG("The ECC with following code: %u \n", verify_res);
   if(verify_res != 0) {
-    LOG_DBG("The ECC verification failed with the following code: %u", verify_res);
+    LOG_DBG("The ECC verification failed with the following code: %u \n", verify_res);
     coap_status_code = OSCORE_DECRYPTION_ERROR;
+    printf("TODO return error\n");
   }
-#endif /*CONTIKI_TARGET_ZOUL*/
-#endif /*OSCORE_WITH_HW_CRYPTO*/
+//#endif /*CONTIKI_TARGET_ZOUL*/
+//#endif /*OSCORE_WITH_HW_CRYPTO*/
 #else /*when not WITH_GROUPCOM or GROUPCOM without OSCORE*/
   coap_status_code = coap_parse_message(message, payload, payload_length);
 #endif /*WITH_GROUPCOM && WITH_OSCORE*/
@@ -516,12 +518,7 @@ int coap_receive(const coap_endpoint_t *src,
 coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
 {
   size_t msg_len = 0;
-#if COAP_GROUPCOM_DELAY == 0 
-  uint16_t delay_time = 1; 
-#elif COAP_GROUPCOM_DELAY != 0 
-  uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY * CLOCK_SECOND)); 
-#endif /* COAP_GROUPCOM_DELAY */
-
+  uint16_t delay_time = (random_rand() % (COAP_MULTICAST_RESPONSE_DELAY * CLOCK_SECOND)); 
   coap_transaction_t *transaction = NULL;
   transaction = coap_get_transaction_by_mid(message->mid);
   if(transaction != NULL) {

@@ -111,6 +111,7 @@ static struct pt_sem crypto_processor_mutex;
 #endif /*OSCORE_WITH_HW_CRYPTO == 1*/
 
 
+static uint8_t verify_result;
 process_event_t pe_message_signed;
 process_event_t pe_message_verified;
 
@@ -660,7 +661,7 @@ typedef struct {
 #else 
 	struct pt verify_sw_pt;
 #endif /* OSCORE_WITH_HW_CRYPTO */
-
+        uint8_t verify_state;
 } verify_state_t;
 
 PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t *private_key, uint8_t *public_key, uint8_t *signature));
@@ -778,10 +779,13 @@ PT_THREAD(ecc_verify_sw(verify_state_t *state, uint8_t *public_key, uint8_t *mes
 	PT_BEGIN(&state->verify_sw_pt);
 	uint8_t res = -1;
         res = uECC_verify(public_key, message_hash, signature);
-	if(res != 1) {
-		LOG_ERR("Deterministic verify in SW failed with code %d!\n", res);
+        if(res != 1) {
+		LOG_ERR("Deterministic verify software FAILED with code %d!\n", res);
+	        state->verify_state = 1;
 		PT_EXIT(&state->verify_sw_pt);
-	}
+	} else {
+                state->verify_state = 0;
+        }
 	PT_END(&state->verify_sw_pt);
 }
 #endif /*OSCORE_WITH_HW_CRYPTO*/
@@ -953,6 +957,8 @@ verify_time_s = RTIMER_NOW();
 	dtls_sha256_update(&msg_hash_ctx, buffer, buffer_len);
 	dtls_sha256_final(message_hash, &msg_hash_ctx);
 	PT_SPAWN(&state->pt, &state->verify_sw_pt, ecc_verify_sw(state, public_key, message_hash, signature));
+        printf("state->verify_state %d\n", state->verify_state);
+        /* state->verify_state is set in ecc_verify_sw */
 #else 
 	uint8_t sha_ret;
 #ifdef CONTIKI_TARGET_SIMPLELINK
@@ -1010,10 +1016,12 @@ verify_time_s = RTIMER_NOW();
 
 	if(operationResult != ECDSA_STATUS_SUCCESS) {
 		LOG_ERR("Verify failed with the following code: %d\n", operationResult);
-		ECDSA_close(ecdsaHandle);
+		state->verify_state = 1;
+                ECDSA_close(ecdsaHandle);
 		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	} else {
+		state->verify_state = 0;
 		LOG_DBG("Verify in Simplelink HW succeded!\n");
 	}
 
@@ -1029,7 +1037,8 @@ verify_time_s = RTIMER_NOW();
 	sha_ret = sha256_hash(buffer, buffer_len, message_hash);
 	if(sha_ret != CRYPTO_SUCCESS) {
 		LOG_ERR("sha256_hash failed with %u\n", sha_ret);
-		state->ecc_verify_state.result = sha_ret;
+		state->verify_state = 1;
+                state->ecc_verify_state.result = sha_ret;
 		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	}
@@ -1049,8 +1058,11 @@ verify_time_s = RTIMER_NOW();
 
 	if(state->ecc_verify_state.result != PKA_STATUS_SUCCESS) {
 		LOG_ERR("Failed to verify message with %d\n", state->ecc_verify_state.result);
+		state->verify_state = 1;
 		PT_EXIT(&state->pt);
-	}
+	} else { /* PKA_STATUS_SUCCESS */
+		state->verify_state = 0;
+        }
 #endif /*CONTIKI_TARGET_ZOUL*/
 #endif /*OSCORE_WITH_HW_CRYPTO*/
 #ifdef PROCESSING_TIME
@@ -1114,7 +1126,7 @@ PROCESS_THREAD(signer, ev, data)
 #if defined OSCORE_WITH_HW_CRYPTO && defined CONTIKI_TARGET_ZOUL
 			item->result = state.ecc_sign_state.result;
 #endif /* OSCORE_WITH_HW_CRYPTO && CONTIKI_TARGET_ZOUL */
-
+                          
  			if(process_post(PROCESS_BROADCAST, pe_message_signed, item) != PROCESS_ERR_OK){ 
 				LOG_ERR("Failed to post pe_message_signed to %s\n", item->process->name);
 			} else {
@@ -1180,9 +1192,10 @@ PROCESS_THREAD(verifier, ev, data)
 			item->result = state.ecc_verify_state.result;
 #endif/*CONTIKI_TARGET_ZOUL*/
 #endif/*OSCORE_WITH_HW_CRYPTO*/
-			static uint8_t verify_result;
-		        verify_result = item->result;
-			if(process_post(PROCESS_BROADCAST, pe_message_verified, &verify_result) != PROCESS_ERR_OK) {
+
+	                verify_result = state.verify_state;
+
+  			if(process_post(PROCESS_BROADCAST, pe_message_verified, &verify_result) != PROCESS_ERR_OK) {
 				LOG_ERR("Failed to post pe_message_verified to %s\n", item->process->name);
 			} else {
 				queue_message_to_verify_done(item);

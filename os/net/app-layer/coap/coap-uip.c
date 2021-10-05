@@ -437,7 +437,7 @@ process_data_cont(uint8_t verify_res)
 static void 
 schedule_send_response(void)
 {
-	LOG_INFO("signing completed. Continue the CoAP sending process.\n");
+	LOG_INFO("Signing completed. Continue the CoAP sending process.\n");
 	coap_send_postcrypto(request, response);
 }
 /*---------------------------------------------------------------------------*/
@@ -505,7 +505,7 @@ join_mcast_group(void)
   if(rv) {
     LOG_INFO("Joined multicast group ");
     LOG_INFO_6ADDR(&uip_ds6_maddr_lookup(&addr)->ipaddr);
-    LOG_INFO("\n");
+    LOG_INFO_("\n");
   }
   return rv;
 }
@@ -570,7 +570,7 @@ PROCESS_THREAD(coap_engine, ev, data)
 	    buffer_flag = 0;
     } else if(ev == pe_message_signed) {
 	    LOG_INFO("Received message signed event!\n");
-	    schedule_send_response();
+            schedule_send_response();
 	    #if defined PROCESSING_TIME
 	    serializing_time_e = RTIMER_NOW();
             printf("s:%lu; ", (serializing_time_e - serializing_time_s));

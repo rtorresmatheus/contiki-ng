@@ -776,7 +776,6 @@ coap_parse_message(coap_message_t *coap_pkt, uint8_t *data, uint16_t data_len)
   LOG_DBG("-Done parsing-------\n");
   #if WITH_OSCORE
   if(oscore_found) {
-   	LOG_DBG_("REMOVE: OSCORE found, decoding\n"); 
 	 return	oscore_decode_message(coap_pkt);
   }
   #endif /* WITH_OSCORE */
@@ -1239,11 +1238,11 @@ oscore_serializer(coap_message_t *coap_pkt, uint8_t *buffer, uint8_t role)
   coap_pkt->buffer = buffer;
 
   if(role == ROLE_COAP) {
-      LOG_DBG_("Serializing, role COAP\n");
+      LOG_DBG("Serializing, role COAP\n");
   } else if (role == ROLE_CONFIDENTIAL) {
-      LOG_DBG_("Serializing, role CONFIDENTIAL\n");
+      LOG_DBG("Serializing, role CONFIDENTIAL\n");
   } else if (role == ROLE_PROTECTED){
-      LOG_DBG_("Serializing, role PROTECTED\n");
+      LOG_DBG("Serializing, role PROTECTED\n");
   }
 
   if(role == ROLE_COAP) {
@@ -1661,7 +1660,6 @@ coap_status_t oscore_parser(coap_message_t *coap_pkt, uint8_t *data,
       LOG_DBG_("Object-Security [%.*s]\n", (int)coap_pkt->object_security_len,
       coap_pkt->object_security);
       OSCOAP = 1; 
-      LOG_DBG_("OSCOAP FOUND!\n");
       break;
     default:
       LOG_DBG_("unknown (%u)\n", option_number);

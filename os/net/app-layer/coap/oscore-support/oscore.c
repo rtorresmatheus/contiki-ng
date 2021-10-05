@@ -559,20 +559,11 @@ oscore_prepare_aad(coap_message_t *coap_pkt, cose_encrypt0_t *cose, uint8_t *buf
   /*When sending responses. */
   if( !coap_is_request(coap_pkt)) { 
     if(sending){
-      LOG_DBG("Case A.1 writing key ID len %d, full [", coap_pkt->security_context->recipient_context->recipient_id_len);
-      LOG_DBG_COAP_BYTES( coap_pkt->security_context->recipient_context->recipient_id, coap_pkt->security_context->recipient_context->recipient_id_len);
-      LOG_DBG_("]\n");
       external_aad_len += cbor_put_bytes(&external_aad_ptr, coap_pkt->security_context->recipient_context->recipient_id,  coap_pkt->security_context->recipient_context->recipient_id_len);
     } else {
-      LOG_DBG("Case A.2 writing key ID len %d, full [", coap_pkt->security_context->sender_context->sender_id_len);
-      LOG_DBG_COAP_BYTES( coap_pkt->security_context->sender_context->sender_id, coap_pkt->security_context->sender_context->sender_id_len);
-      LOG_DBG_("]\n");
       external_aad_len += cbor_put_bytes(&external_aad_ptr, coap_pkt->security_context->sender_context->sender_id,  coap_pkt->security_context->sender_context->sender_id_len);
     }
   } else {	 
-    LOG_DBG("CASE Bwriting writing key ID len %d, full [",cose->key_id_len);
-    LOG_DBG_COAP_BYTES(cose->key_id, cose->key_id_len);
-    LOG_DBG_("]\n");
     external_aad_len += cbor_put_bytes(&external_aad_ptr, cose->key_id, cose->key_id_len);
   }
   external_aad_len += cbor_put_bytes(&external_aad_ptr, cose->partial_iv, cose->partial_iv_len);  
