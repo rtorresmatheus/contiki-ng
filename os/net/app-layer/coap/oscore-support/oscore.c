@@ -270,7 +270,7 @@ oscore_decode_message(coap_message_t *coap_pkt)
 #endif /* WITH_GROUPCOM */   
     /*4 Verify the ‘Partial IV’ parameter using the Replay Window, as described in Section 7.4. */
     if(!oscore_validate_sender_seq(ctx->recipient_context, cose)) {
-      LOG_DBG_("OSCORE Replayed or old message\n");
+      LOG_DBG("Replayed or old message\n");
       coap_error_message = "Replay detected";
       return UNAUTHORIZED_4_01;
     }

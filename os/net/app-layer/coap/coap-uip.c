@@ -417,11 +417,14 @@ process_data(void)
 
   buffer_flag = 1;
   parse_status = coap_receive(group_oscore_message_buffer, uip_datalen, request);
-#else //no OSCORE, but GROUPCOM
-  coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), is_mcast);
+  if( parse_status != NO_ERROR){
+    buffer_flag = 0; /* Clear buffer for new message in case of error. */
+  }
+#else /* no OSCORE, but GROUPCOM */
+  parse_status = coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), is_mcast);
 #endif /*WITH_OSCORE*/
-#else //not OSCORE, not GROUPCOM
-  coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), 0);
+#else /* not OSCORE, not GROUPCOM */
+  parse_status = coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), 0);
 #endif /*WITH_GROUCPOM*/
 }
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
