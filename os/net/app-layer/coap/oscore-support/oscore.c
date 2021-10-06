@@ -290,10 +290,10 @@ oscore_decode_message(coap_message_t *coap_pkt)
       cose_encrypt0_set_partial_iv(cose, seq_buffer, seq_len);
     }
   }
-  oscore_populate_cose(coap_pkt, cose, ctx, 0);  
+  oscore_populate_cose(coap_pkt, cose, ctx, OSCORE_RECEIVING_MESSAGE);  
   coap_pkt->security_context = ctx;
 
-  size_t aad_len = oscore_prepare_aad(coap_pkt, cose, aad_buffer, 0);
+  size_t aad_len = oscore_prepare_aad(coap_pkt, cose, aad_buffer, OSCORE_RECEIVING_MESSAGE);
   cose_encrypt0_set_aad(cose, aad_buffer, aad_len);
   cose_encrypt0_set_alg(cose, ctx->alg);
 
@@ -326,10 +326,12 @@ oscore_decode_message(coap_message_t *coap_pkt)
     /* verify signature     */
     uint8_t *signature_ptr = coap_pkt->payload + encrypt_len;//address of the signature (after the ciphertext)
     uint8_t sig_buffer[aad_len + encrypt_len + 24];
-    //TODO optimize so we dont have to do this twice
+    if(!coap_is_request(coap_pkt)){
+      cose_encrypt0_set_key_id(cose, ctx->sender_context->sender_id, ctx->sender_context->sender_id_len);
+    }
     aad_len = oscore_prepare_int(ctx, cose, coap_pkt->object_security, coap_pkt->object_security_len,aad_buffer);
 
-    oscore_populate_sign(coap_is_request(coap_pkt), sign, ctx);
+    oscore_populate_sign(coap_is_request(coap_pkt), sign, ctx, OSCORE_RECEIVING_MESSAGE);
     size_t sig_len = oscore_prepare_sig_structure(sig_buffer, 
         aad_buffer, aad_len, tmp_buffer, encrypt_len);
     cose_sign1_set_signature(sign, signature_ptr);
@@ -430,7 +432,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
     LOG_DBG_("No context in OSCORE!\n");
     return PACKET_SERIALIZATION_ERROR;
   }
-  oscore_populate_cose(coap_pkt, cose, coap_pkt->security_context, 1);
+  oscore_populate_cose(coap_pkt, cose, coap_pkt->security_context, OSCORE_SENDING_MESSAGE);
 
   /* 2 Compose the AAD and the plaintext, as described in Sections 5.3 and 5.4.*/
   uint8_t plaintext_len = oscore_serializer(coap_pkt, content_buffer, ROLE_CONFIDENTIAL);
@@ -441,7 +443,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
 
   cose_encrypt0_set_content(cose, content_buffer, plaintext_len);
 
-  uint8_t aad_len = oscore_prepare_aad(coap_pkt, cose, aad_buffer, 1);
+  uint8_t aad_len = oscore_prepare_aad(coap_pkt, cose, aad_buffer, OSCORE_SENDING_MESSAGE);
   cose_encrypt0_set_aad(cose, aad_buffer, aad_len);
   /*3 Compute the AEAD nonce as described in Section 5.2*/ 
   oscore_generate_nonce(cose, coap_pkt, nonce_buffer, COSE_algorithm_AES_CCM_16_64_128_IV_LEN);
@@ -487,20 +489,18 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   int total_len = ciphertext_len + ES256_SIGNATURE_LEN;
 
   //set the keys and algorithms
-  oscore_populate_sign(coap_is_request(coap_pkt), sign, ctx);
+  oscore_populate_sign(coap_is_request(coap_pkt), sign, ctx, OSCORE_SENDING_MESSAGE);
 
   //When we are sending responses the Key-ID in the Signature AAD shall be the REQUEST Key ID.
   if(!coap_is_request(coap_pkt)){ 
     cose_encrypt0_set_key_id(cose, ctx->recipient_context->recipient_id, ctx->recipient_context->recipient_id_len);
   }
   //prepare external_aad structure with algs, params, etc. to later populate the sig_structure
-
   aad_len = oscore_prepare_int(ctx, cose, coap_pkt->object_security, coap_pkt->object_security_len,aad_buffer);
 
   size_t sign_encoded_len = oscore_prepare_sig_structure(sign_encoded_buffer, 
       aad_buffer, aad_len, cose->content, ciphertext_len); 
-  memset(&(content_buffer[ciphertext_len]), 0xAA, 64);
-  //printf("SIGNATURE SHOULD GO HERE %p \n", &(content_buffer[ciphertext_len]));
+  //memset(&(content_buffer[ciphertext_len]), 0xAA, 64);
   cose_sign1_set_signature(sign, &(content_buffer[ciphertext_len]));
   cose_sign1_set_ciphertext(sign, sign_encoded_buffer, sign_encoded_len);
   /* Queue message to sign */
@@ -714,21 +714,19 @@ oscore_init_client()
 #ifdef WITH_GROUPCOM
 /* Sets alg and keys in COSE SIGN  */
   void
-oscore_populate_sign(uint8_t coap_is_request, cose_sign1_t *sign, oscore_ctx_t *ctx)
+oscore_populate_sign(uint8_t coap_is_request, cose_sign1_t *sign, oscore_ctx_t *ctx, uint8_t sending)
 {
   cose_sign1_set_alg(sign, ctx->counter_signature_algorithm,
       ctx->counter_signature_parameters);
-  if (coap_is_request){
-    cose_sign1_set_private_key(sign, ctx->recipient_context->private_key); 
-    cose_sign1_set_public_key(sign, ctx->recipient_context->public_key);
-  } else {
+  if (sending){
     cose_sign1_set_private_key(sign, ctx->sender_context->private_key); 
     cose_sign1_set_public_key(sign, ctx->sender_context->public_key);
+  } else {
+    cose_sign1_set_private_key(sign, ctx->recipient_context->private_key); 
+    cose_sign1_set_public_key(sign, ctx->recipient_context->public_key);
   }
 }
-//
-// oscore_prepare_sig_structure
-// creates and sets structure to be signed
+/* creates and sets structure to be signed */
   size_t
 oscore_prepare_sig_structure(uint8_t *sig_ptr,
     uint8_t *aad_buffer, uint8_t aad_len,
@@ -747,7 +745,7 @@ oscore_prepare_sig_structure(uint8_t *sig_ptr,
 }
 
   size_t
-oscore_prepare_int(oscore_ctx_t *ctx, cose_encrypt0_t *cose,     uint8_t *oscore_option, size_t oscore_option_len, uint8_t *external_aad_ptr)
+oscore_prepare_int(oscore_ctx_t *ctx, cose_encrypt0_t *cose, uint8_t *oscore_option, size_t oscore_option_len, uint8_t *external_aad_ptr)
 {
   size_t external_aad_len = 0;
   if ((oscore_option_len > 0) && (oscore_option != NULL)){

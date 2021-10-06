@@ -53,7 +53,7 @@
 #define MULTICAST_EP "coap://[ff1E::89:ABCD]"
 #define SERVER_EP "coap://[fd00::212:4b00:14b5:d967]"
 
-#define SERVER 1
+#define SERVER 1 
 uint8_t master_secret[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
 uint8_t salt[8] = {0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40};
 uint8_t sender_id[1] = { 0x25 };
@@ -125,7 +125,7 @@ PROCESS_THREAD(er_example_client, ev, data)
   if(!context){
         LOG_ERR("Could not create OSCORE Security Context!\n");
   }
-  oscore_add_group_keys(context, snd_public_key, snd_private_key, rcv_public_key, rcv_private_key, COSE_Algorithm_ES256, COSE_Elliptic_Curve_P256);
+  oscore_add_group_keys(context, rcv_public_key, rcv_private_key, snd_public_key, snd_private_key, COSE_Algorithm_ES256, COSE_Elliptic_Curve_P256);
   oscore_ep_ctx_set_association(&server_ep, url, context);
   coap_endpoint_parse(MULTICAST_EP, strlen(MULTICAST_EP), &server_ep);
 

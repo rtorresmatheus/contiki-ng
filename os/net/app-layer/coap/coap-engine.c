@@ -201,11 +201,9 @@ int coap_receive(const coap_endpoint_t *src,
   coap_status_code = in_status;
 //#ifdef OSCORE_WITH_HW_CRYPTO
 //#ifdef CONTIKI_TARGET_ZOUL
-    LOG_DBG("The ECC with following code: %u \n", verify_res);
   if(verify_res != 0) {
     LOG_DBG("The ECC verification failed with the following code: %u \n", verify_res);
     coap_status_code = OSCORE_DECRYPTION_ERROR;
-    printf("TODO return error\n");
   }
 //#endif /*CONTIKI_TARGET_ZOUL*/
 //#endif /*OSCORE_WITH_HW_CRYPTO*/
