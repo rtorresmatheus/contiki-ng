@@ -351,17 +351,27 @@ oscore_populate_cose(coap_message_t *pkt, cose_encrypt0_t *cose, oscore_ctx_t *c
   uint8_t partial_iv_len;
 
 #ifdef WITH_GROUPCOM
-  if(sending){//recent_seq is the one that actually gets updated
-    partial_iv_len = u64tob(ctx->recipient_context->recent_seq, partial_iv_buffer);
-    cose_encrypt0_set_partial_iv(cose, partial_iv_buffer, partial_iv_len);
-    cose_encrypt0_set_key_id(cose, ctx->sender_context->sender_id, ctx->sender_context->sender_id_len);
-    cose_encrypt0_set_key(cose, ctx->sender_context->sender_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
-  } else {
-
-    cose_encrypt0_set_key_id(cose, ctx->recipient_context->recipient_id, ctx->recipient_context->recipient_id_len);
-    cose_encrypt0_set_key(cose, ctx->recipient_context->recipient_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
+  if(coap_is_request(pkt)) {
+    if(sending){
+      partial_iv_len = u64tob(ctx->sender_context->seq, partial_iv_buffer);
+      cose_encrypt0_set_partial_iv(cose, partial_iv_buffer, partial_iv_len);
+      cose_encrypt0_set_key_id(cose, ctx->sender_context->sender_id, ctx->sender_context->sender_id_len);
+      cose_encrypt0_set_key(cose, ctx->sender_context->sender_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
+    } else {
+      cose_encrypt0_set_key_id(cose, ctx->recipient_context->recipient_id, ctx->recipient_context->recipient_id_len);
+      cose_encrypt0_set_key(cose, ctx->recipient_context->recipient_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
+    }
+  } else { /* Message is a response */
+    if(sending){/* recent_seq contains the last received seq */
+      partial_iv_len = u64tob(ctx->recipient_context->recent_seq, partial_iv_buffer);
+      cose_encrypt0_set_partial_iv(cose, partial_iv_buffer, partial_iv_len);
+      cose_encrypt0_set_key_id(cose, ctx->sender_context->sender_id, ctx->sender_context->sender_id_len);
+      cose_encrypt0_set_key(cose, ctx->sender_context->sender_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
+    } else {
+      cose_encrypt0_set_key_id(cose, ctx->recipient_context->recipient_id, ctx->recipient_context->recipient_id_len);
+      cose_encrypt0_set_key(cose, ctx->recipient_context->recipient_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
+    }
   }
-
 #else
   if(coap_is_request(pkt)) {
     if(sending){
@@ -457,18 +467,13 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   uint8_t option_value_len = 0;
 #ifdef WITH_GROUPCOM
   if(coap_is_request(coap_pkt)){
-
-    LOG_DBG("Setting kid context:  [");
-    LOG_DBG_COAP_BYTES(ctx->id_context, ctx->id_context_len);
-    LOG_DBG_("]\n");
-
     cose_encrypt0_set_kid_context(cose, ctx->id_context, ctx->id_context_len);
   }
-  //TODO add GROUP ID here
 #endif /* WITH_GROUPCOM */
+
   if(coap_is_request(coap_pkt)){
     option_value_len = oscore_encode_option_value(option_value_buffer, cose, 1);
-  } else { //Partial IV shall NOT be included in responses
+  } else { /* Partial IV shall NOT be included in responses unless Group-OSCORE is used */
 #ifdef WITH_GROUPCOM
     option_value_len = oscore_encode_option_value(option_value_buffer, cose, 1);
 #else	
