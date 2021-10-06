@@ -2,7 +2,7 @@ MAKE_WITH_DTLS ?= 0
 MAKE_WITH_OSCORE ?= 0
 MAKE_WITH_GROUPCOM ?= 0
 MAKE_WITH_HW_CRYPTO ?= 0
-
+MAKE_WITH_ES256 ?= 1
 
 #For unicast OSCORE
 ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
@@ -96,10 +96,18 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
     
     MODULES += os/net/security/tinydtls/sha2
     CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
-    #uECC software configuration.
-    MODULES += os/net/app-layer/coap/oscore-support/uecc 
-    CFLAGS += -DuECC_PLATFORM=uECC_arm
-    CFLAGS += -DuECC_CURVE=uECC_secp256r1
+    ifeq ($(strip $(MAKE_WITH_ES256)),1)
+      #uECC software configuration.
+      MODULES += os/net/app-layer/coap/oscore-support/uecc 
+      CFLAGS += -DWATCHDOG_CONF_ENABLE=0
+      CFLAGS += -DuECC_PLATFORM=uECC_arm
+      CFLAGS += -DuECC_CURVE=uECC_secp256r1
+      CFLAGS += -DWITH_ES256
+    else #With EDDSA25519
+      MODULES += os/net/app-layer/coap/oscore-support/c25519 
+      CFLAGS += -DWATCHDOG_CONF_ENABLE=0
+      CFLAGS += -DWITH_ED25519
+    endif # MAKE_WITH_ES256
   endif #MAKE_WITH_HW_CRYPTO
   endif #Simpleink
 
@@ -117,11 +125,18 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
     
     MODULES += os/net/security/tinydtls/sha2
     CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
-    #uECC software configuration.
-    MODULES += os/net/app-layer/coap/oscore-support/uecc 
-    CFLAGS += -DWATCHDOG_CONF_ENABLE=0
-    CFLAGS += -DuECC_PLATFORM=uECC_arm
-    CFLAGS += -DuECC_CURVE=uECC_secp256r1
+    ifeq ($(strip $(MAKE_WITH_ES256)),1)
+      #uECC software configuration.
+      MODULES += os/net/app-layer/coap/oscore-support/uecc 
+      CFLAGS += -DWATCHDOG_CONF_ENABLE=0
+      CFLAGS += -DuECC_PLATFORM=uECC_arm
+      CFLAGS += -DuECC_CURVE=uECC_secp256r1
+      CFLAGS += -DWITH_ES256
+    else #With EDDSA25519
+      MODULES += os/net/app-layer/coap/oscore-support/c25519 
+      CFLAGS += -DWATCHDOG_CONF_ENABLE=0
+      CFLAGS += -DWITH_ED25519
+    endif # MAKE_WITH_ES256
   endif #MAKE_WITH_HW_CRYPTO
   endif #Zoul
 
@@ -130,9 +145,17 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
     MODULES += os/net/security/tinydtls/sha2
     CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
     
-    MODULES += os/net/app-layer/coap/oscore-support/uecc 
-    CFLAGS += -DuECC_PLATFORM=uECC_x86_64
-    CFLAGS += -DuECC_CURVE=uECC_secp256r1
+    ifeq ($(strip $(MAKE_WITH_ES256)),1)
+    #uECC software configuration.
+      MODULES += os/net/app-layer/coap/oscore-support/uecc 
+      CFLAGS += -DWATCHDOG_CONF_ENABLE=0
+      CFLAGS += -DuECC_PLATFORM=uECC_arm
+      CFLAGS += -DuECC_CURVE=uECC_secp256r1
+      CFLAGS += -DWITH_ES256
+    else #With EDDSA25519
+      MODULES += os/net/app-layer/coap/oscore-support/c25519 
+      CFLAGS += -DWITH_ED25519
+    endif # MAKE_WITH_ES256
   endif
 endif #MAKE_WITH_OSCORE
 endif

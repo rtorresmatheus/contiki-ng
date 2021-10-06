@@ -106,8 +106,11 @@ static struct pt_sem crypto_processor_mutex;
 #endif /*CONTIKI_TARGET_NATIVE*/
 
 #else /*SW crypto*/
+#ifdef WITH_ES256
 #include "uECC.h"
-
+#else 
+#include "edsign.h"
+#endif /* WITH_ES256 */
 #endif /*OSCORE_WITH_HW_CRYPTO == 1*/
 
 
@@ -728,7 +731,7 @@ crypto_fill_random(uint8_t *buffer, size_t size_in_bytes)
 int
 oscore_edDSA_keypair(int8_t alg, int8_t alg_param, uint8_t *private_key, uint8_t *public_key, uint8_t *es256_seed)
 {
-   if(alg != COSE_Algorithm_ES256 || alg_param != COSE_Elliptic_Curve_P256)  {
+   if(alg != COSE_Algorithm_ECC || alg_param != COSE_Elliptic_Curve)  {
        return 0;
     }
  /*   es256_create_keypair(public_key, private_key, es256_seed);*/
@@ -740,6 +743,7 @@ oscore_edDSA_keypair(int8_t alg, int8_t alg_param, uint8_t *private_key, uint8_t
 #define SHA256_DIGEST_LENGTH 32
 #ifndef OSCORE_WITH_HW_CRYPTO
 
+#ifdef WITH_ES256
 typedef struct SHA256_HashContext {
     uECC_HashContext uECC;
     dtls_sha256_ctx ctx;
@@ -788,6 +792,7 @@ PT_THREAD(ecc_verify_sw(verify_state_t *state, uint8_t *public_key, uint8_t *mes
         }
 	PT_END(&state->verify_sw_pt);
 }
+#endif /* WITH_ES256 */
 #endif /*OSCORE_WITH_HW_CRYPTO*/
 
 PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t *private_key, uint8_t *public_key, uint8_t *signature))
@@ -797,27 +802,35 @@ PT_THREAD(ecc_sign(sign_state_t *state, uint8_t *buffer, size_t msg_len, uint8_t
 sign_time_s = RTIMER_NOW();
 #endif /* PROCESSING_TIME */
 
-	uint8_t message_hash[SHA256_DIGEST_LENGTH];/*==SHA56_DIGEST_LEN_BYTES*/
+#ifndef WITH_ED25519
+	uint8_t message_hash[SHA256_DIGEST_LENGTH];
+#endif /* WITH_ED25519 */
+
 #ifdef OSCORE_WITH_HW_CRYPTO
 	uint8_t sha_ret;
 	PT_SEM_WAIT(&state->pt, &crypto_processor_mutex);
 #endif /* OSCORE_WITH_HW_CRYPTO */
 	state->sig_len = 0;
 #ifndef OSCORE_WITH_HW_CRYPTO /*SW crypto is used */
+
+#ifdef WITH_ES256
 	dtls_sha256_ctx msg_hash_ctx;
 	dtls_sha256_init(&msg_hash_ctx);
 	dtls_sha256_update(&msg_hash_ctx, buffer, msg_len);
 	dtls_sha256_final(message_hash, &msg_hash_ctx);
 
-	uint8_t tmp[ES256_PRIVATE_KEY_LEN + ES256_PRIVATE_KEY_LEN + ES256_SIGNATURE_LEN];
+	uint8_t tmp[ECC_PRIVATE_KEY_LEN + ECC_PRIVATE_KEY_LEN + ECC_SIGNATURE_LEN];
 	SHA256_HashContext ctx = {{&init_SHA256, &update_SHA256, &finish_SHA256, 64, 32, tmp}};
  	PT_SPAWN(&state->pt, &state->sign_deterministic_pt, ecc_sign_deterministic(state, private_key, message_hash, &ctx.uECC, signature));
 
-	state->sig_len = ES256_SIGNATURE_LEN;
+#else /* WITH_ED25519 */
+        edsign_sign(signature, public_key, private_key, buffer, msg_len);
+#endif /* WITH_ES256 */
+	state->sig_len = ECC_SIGNATURE_LEN;
 
 #else /* HW crypto is used */
 #ifdef CONTIKI_TARGET_SIMPLELINK
-	uint8_t priv_key[ES256_PRIVATE_KEY_LEN];
+	uint8_t priv_key[ECC_PRIVATE_KEY_LEN];
 	uint8_t hash[SHA256_DIGEST_LENGTH];
 	uint8_t r[32] = {0};
 	uint8_t s[32] = {0};
@@ -867,13 +880,13 @@ sign_time_s = RTIMER_NOW();
 		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	}
-	memcpy(priv_key, private_key, ES256_PRIVATE_KEY_LEN);
+	memcpy(priv_key, private_key, ECC_PRIVATE_KEY_LEN);
 	memcpy(hash, message_hash, SHA256_DIGEST_LENGTH);
 	/*Re-format the inputs according to the requirements of simplelink crypto-processor*/
-	convert_simplelink(priv_key, ES256_PRIVATE_KEY_LEN);
+	convert_simplelink(priv_key, ECC_PRIVATE_KEY_LEN);
 	convert_simplelink(hash, SHA256_DIGEST_LENGTH);
 
-	CryptoKeyPlaintext_initKey(&myPrivateKey, priv_key, ES256_PRIVATE_KEY_LEN);
+	CryptoKeyPlaintext_initKey(&myPrivateKey, priv_key, ECC_PRIVATE_KEY_LEN);
 	//CryptoKeyPlaintext_initKey(&pmsnKey, k, sizeof(k));
 
 	ECDSA_OperationSign_init(&operationSign);
@@ -893,12 +906,12 @@ sign_time_s = RTIMER_NOW();
 		PT_EXIT(&state->pt);
 	}
 	/*reverse all bytes of r and s*/
-	reverse_endianness(r, ES256_PRIVATE_KEY_LEN);
-	reverse_endianness(s, ES256_PRIVATE_KEY_LEN);
-	memcpy(signature, r, ES256_PRIVATE_KEY_LEN);
-	memcpy(signature + ES256_PRIVATE_KEY_LEN, s, ES256_PRIVATE_KEY_LEN);
+	reverse_endianness(r, ECC_PRIVATE_KEY_LEN);
+	reverse_endianness(s, ECC_PRIVATE_KEY_LEN);
+	memcpy(signature, r, ECC_PRIVATE_KEY_LEN);
+	memcpy(signature + ECC_PRIVATE_KEY_LEN, s, ECC_PRIVATE_KEY_LEN);
 
-	state->sig_len = ES256_SIGNATURE_LEN;
+	state->sig_len = ECC_SIGNATURE_LEN;
 	ECDSA_close(ecdsaHandle);
 	PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 #endif /*CONTIKI_TARGET_SIMPLELINK */
@@ -915,9 +928,9 @@ sign_time_s = RTIMER_NOW();
 
 	state->ecc_sign_state.process = state->process;
 	state->ecc_sign_state.curve_info = &nist_p_256;
-	ec_uint8v_to_uint32v(state->ecc_sign_state.secret, private_key, ES256_PRIVATE_KEY_LEN);
+	ec_uint8v_to_uint32v(state->ecc_sign_state.secret, private_key, ECC_PRIVATE_KEY_LEN);
 
-	crypto_fill_random((uint8_t *) state->ecc_sign_state.k_e, ES256_PRIVATE_KEY_LEN);
+	crypto_fill_random((uint8_t *) state->ecc_sign_state.k_e, ECC_PRIVATE_KEY_LEN);
 
 	pka_enable();
 	PT_SPAWN(&state->pt, &state->ecc_sign_state.pt, ecc_dsa_sign(&state->ecc_sign_state));
@@ -928,9 +941,9 @@ sign_time_s = RTIMER_NOW();
 		PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 		PT_EXIT(&state->pt);
 	} 
-	ec_uint32v_to_uint8v(signature, state->ecc_sign_state.point_r.x, ES256_PRIVATE_KEY_LEN);
-	ec_uint32v_to_uint8v(signature + ES256_PRIVATE_KEY_LEN, state->ecc_sign_state.signature_s, ES256_PRIVATE_KEY_LEN);
-	state->sig_len = ES256_SIGNATURE_LEN;
+	ec_uint32v_to_uint8v(signature, state->ecc_sign_state.point_r.x, ECC_PRIVATE_KEY_LEN);
+	ec_uint32v_to_uint8v(signature + ECC_PRIVATE_KEY_LEN, state->ecc_sign_state.signature_s, ECC_PRIVATE_KEY_LEN);
+	state->sig_len = ECC_SIGNATURE_LEN;
 	
 	PT_SEM_SIGNAL(&state->pt, &crypto_processor_mutex);
 #endif /*CONTIKI_TARGET_ZOUL*/
@@ -950,8 +963,12 @@ verify_time_s = RTIMER_NOW();
 #ifdef OSCORE_WITH_HW_CRYPTO
 	PT_SEM_WAIT(&state->pt, &crypto_processor_mutex);
 #endif /*OSCORE_WITH_HW_CRYPTO*/
+#ifndef WITH_ED25519
 	uint8_t message_hash[SHA256_DIGEST_LENGTH];
+#endif /* WITH_ED25519 */
 #ifndef OSCORE_WITH_HW_CRYPTO
+
+#ifdef WITH_ES256
 	dtls_sha256_ctx msg_hash_ctx;
 	dtls_sha256_init(&msg_hash_ctx);
 	dtls_sha256_update(&msg_hash_ctx, buffer, buffer_len);
@@ -959,6 +976,12 @@ verify_time_s = RTIMER_NOW();
 	PT_SPAWN(&state->pt, &state->verify_sw_pt, ecc_verify_sw(state, public_key, message_hash, signature));
         printf("state->verify_state %d\n", state->verify_state);
         /* state->verify_state is set in ecc_verify_sw */
+#else /* WITH_ED25519 */
+        uint8_t res = edsign_verify(signature, public_key, buffer, buffer_len);
+        state->verify_state = res;
+        printf("ED25519 state->verify_state %d\n", state->verify_state);
+
+#endif /* WITH_ES256 */
 #else 
 	uint8_t sha_ret;
 #ifdef CONTIKI_TARGET_SIMPLELINK
@@ -966,12 +989,12 @@ verify_time_s = RTIMER_NOW();
 	ECDSA_Handle ecdsaHandle;
 	int_fast16_t operationResult;
 	ECDSA_OperationVerify operationVerify;
-	uint8_t pub_x[ES256_PRIVATE_KEY_LEN];
-       	uint8_t pub_y[ES256_PRIVATE_KEY_LEN];
-	uint8_t pub_key[ES256_PUBLIC_KEY_LEN];
+	uint8_t pub_x[ECC_PRIVATE_KEY_LEN];
+       	uint8_t pub_y[ECC_PRIVATE_KEY_LEN];
+	uint8_t pub_key[ECC_PUBLIC_KEY_LEN];
        	uint8_t hash[SHA256_DIGEST_LENGTH];
-	uint8_t sig_r[ES256_PRIVATE_KEY_LEN];
-	uint8_t sig_s[ES256_PRIVATE_KEY_LEN];	
+	uint8_t sig_r[ECC_PRIVATE_KEY_LEN];
+	uint8_t sig_s[ECC_PRIVATE_KEY_LEN];	
 	sha_ret = sha2_hash(buffer, buffer_len, message_hash);
 	if(sha_ret != SHA2_STATUS_SUCCESS) {
 		LOG_ERR("Sha2 failed with the code: %u!\n", sha_ret);
@@ -987,22 +1010,22 @@ verify_time_s = RTIMER_NOW();
 		PT_EXIT(&state->pt);
 	}
 
-	memcpy(pub_x, public_key, 				ES256_PRIVATE_KEY_LEN);	
-	memcpy(pub_y, public_key + ES256_PRIVATE_KEY_LEN, 	ES256_PRIVATE_KEY_LEN);
+	memcpy(pub_x, public_key, 				ECC_PRIVATE_KEY_LEN);	
+	memcpy(pub_y, public_key + ECC_PRIVATE_KEY_LEN, 	ECC_PRIVATE_KEY_LEN);
 	memcpy(hash, message_hash, 				SHA256_DIGEST_LENGTH);
-	memcpy(sig_r, signature, 				ES256_PRIVATE_KEY_LEN);
-	memcpy(sig_s, signature + ES256_PRIVATE_KEY_LEN, 	ES256_PRIVATE_KEY_LEN);
+	memcpy(sig_r, signature, 				ECC_PRIVATE_KEY_LEN);
+	memcpy(sig_s, signature + ECC_PRIVATE_KEY_LEN, 	ECC_PRIVATE_KEY_LEN);
 	/*Re-format the inputs according to the requirements of simplelink crypto-processor*/
-	convert_simplelink(pub_x, ES256_PRIVATE_KEY_LEN);
-	convert_simplelink(pub_y, ES256_PRIVATE_KEY_LEN);
+	convert_simplelink(pub_x, ECC_PRIVATE_KEY_LEN);
+	convert_simplelink(pub_y, ECC_PRIVATE_KEY_LEN);
 	convert_simplelink(hash, SHA256_DIGEST_LENGTH);
-	convert_simplelink(sig_r, ES256_PRIVATE_KEY_LEN);
-	convert_simplelink(sig_s, ES256_PRIVATE_KEY_LEN);
+	convert_simplelink(sig_r, ECC_PRIVATE_KEY_LEN);
+	convert_simplelink(sig_s, ECC_PRIVATE_KEY_LEN);
 
-	memcpy(pub_key, pub_x, 		ES256_PRIVATE_KEY_LEN);
-	memcpy(&(pub_key[32]), pub_y, 	ES256_PRIVATE_KEY_LEN);
+	memcpy(pub_key, pub_x, 		ECC_PRIVATE_KEY_LEN);
+	memcpy(&(pub_key[32]), pub_y, 	ECC_PRIVATE_KEY_LEN);
 
-	CryptoKeyPlaintext_initKey(&theirPublicKey, pub_key, ES256_PUBLIC_KEY_LEN);
+	CryptoKeyPlaintext_initKey(&theirPublicKey, pub_key, ECC_PUBLIC_KEY_LEN);
 
 	ECDSA_OperationVerify_init(&operationVerify);
 
@@ -1030,9 +1053,9 @@ verify_time_s = RTIMER_NOW();
 #endif /*CONTIKI_TARGET_SIMPLELINK*/
 #ifdef CONTIKI_TARGET_ZOUL
 	const uint8_t *sig_r = signature;
-	const uint8_t *sig_s = signature + ES256_PRIVATE_KEY_LEN;
-	ec_uint8v_to_uint32v(state->ecc_verify_state.signature_r, sig_r, ES256_PRIVATE_KEY_LEN);
-	ec_uint8v_to_uint32v(state->ecc_verify_state.signature_s, sig_s, ES256_PRIVATE_KEY_LEN);
+	const uint8_t *sig_s = signature + ECC_PRIVATE_KEY_LEN;
+	ec_uint8v_to_uint32v(state->ecc_verify_state.signature_r, sig_r, ECC_PRIVATE_KEY_LEN);
+	ec_uint8v_to_uint32v(state->ecc_verify_state.signature_s, sig_s, ECC_PRIVATE_KEY_LEN);
 
 	sha_ret = sha256_hash(buffer, buffer_len, message_hash);
 	if(sha_ret != CRYPTO_SUCCESS) {
@@ -1211,7 +1234,7 @@ PROCESS_THREAD(verifier, ev, data)
 int
 oscore_edDSA_sign(int8_t alg, int8_t alg_param, uint8_t *signature, uint8_t *ciphertext, uint16_t ciphertext_len, uint8_t *private_key, uint8_t *public_key)
 {
-   if(alg != COSE_Algorithm_ES256 || alg_param != COSE_Elliptic_Curve_P256)  {
+   if(alg != COSE_Algorithm_ECC || alg_param != COSE_Elliptic_Curve)  {
     return 0;
   }
   
@@ -1226,7 +1249,7 @@ oscore_edDSA_sign(int8_t alg, int8_t alg_param, uint8_t *signature, uint8_t *cip
 int
 oscore_edDSA_verify(int8_t alg, int8_t alg_param, uint8_t *signature, uint8_t *plaintext, uint16_t plaintext_len, uint8_t *public_key)
 {
-  if(alg != COSE_Algorithm_ES256 || alg_param != COSE_Elliptic_Curve_P256)  {
+  if(alg != COSE_Algorithm_ECC || alg_param != COSE_Elliptic_Curve)  {
     return 0;
   }
 

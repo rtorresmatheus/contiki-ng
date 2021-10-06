@@ -78,9 +78,9 @@ struct oscore_sender_ctx_t {
   uint8_t sender_id_len;
   uint8_t token_len;
 #ifdef WITH_GROUPCOM
-  uint8_t public_key[ES256_PUBLIC_KEY_LEN];
+  uint8_t public_key[ECC_PUBLIC_KEY_LEN];
   uint8_t public_key_len;
-  uint8_t private_key[ES256_PRIVATE_KEY_LEN];
+  uint8_t private_key[ECC_PRIVATE_KEY_LEN];
   uint8_t private_key_len;
 #endif /* WITH_GROUPCOM */
 };
@@ -97,9 +97,9 @@ struct oscore_recipient_ctx_t {
   uint8_t replay_window_size;
   uint8_t initialized;
 #ifdef WITH_GROUPCOM
-  uint8_t public_key[ES256_PUBLIC_KEY_LEN];
+  uint8_t public_key[ECC_PUBLIC_KEY_LEN];
   uint8_t public_key_len;
-  uint8_t private_key[ES256_PRIVATE_KEY_LEN];
+  uint8_t private_key[ECC_PRIVATE_KEY_LEN];
   uint8_t private_key_len;
   oscore_recipient_ctx_t *next_recipient; 
   /* This field allows recipient chaining */

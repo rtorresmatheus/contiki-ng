@@ -7,6 +7,8 @@ PLATFORMS_EXCLUDE = sky z1
 MAKE_WITH_OSCORE = 1
 MAKE_WITH_GROUPCOM = 1
 
+MAKE_WITH_ES256 = 0
+
 # Include CoAP resources
 MODULES_REL += ./resources
 

@@ -47,6 +47,29 @@
 #define ES256_SIGNATURE_LEN      64
 #define ES256_PRIVATE_KEY_LEN  	 32
 #define ES256_PUBLIC_KEY_LEN     64
+#define COSE_Algorithm_ED25519	 -7
+#define COSE_Elliptic_Curve_ED25519 1
+#define ED25519_SIGNATURE_LEN    64
+#define ED25519_PRIVATE_KEY_LEN  32
+#define ED25519_PUBLIC_KEY_LEN   32
+
+#ifdef WITH_ES256
+
+#define COSE_Algorithm_ECC      COSE_Algorithm_ES256
+#define COSE_Elliptic_Curve     COSE_Elliptic_Curve_P256
+#define ECC_SIGNATURE_LEN       ES256_SIGNATURE_LEN
+#define ECC_PRIVATE_KEY_LEN     ES256_PRIVATE_KEY_LEN
+#define ECC_PUBLIC_KEY_LEN      ES256_PUBLIC_KEY_LEN
+
+#elif WITH_ED25519
+
+#define COSE_Algorithm_ECC      COSE_Algorithm_ED25519
+#define COSE_Elliptic_Curve     COSE_Elliptic_Curve_ED25519             
+#define ECC_SIGNATURE_LEN       ED25519_SIGNATURE_LEN  
+#define ECC_PRIVATE_KEY_LEN     ED25519_PRIVATE_KEY_LEN
+#define ECC_PUBLIC_KEY_LEN      ED25519_PUBLIC_KEY_LEN 
+
+#endif /* WITH_ES256 */
 #endif /* WITH_GROUPCOM == 1*/
 
 #define COSE_Algorithm_AES_CCM_16_64_128 10

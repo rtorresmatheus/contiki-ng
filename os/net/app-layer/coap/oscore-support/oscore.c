@@ -303,7 +303,7 @@ oscore_decode_message(coap_message_t *coap_pkt)
   uint16_t encrypt_len = coap_pkt->payload_len;
 #ifdef WITH_GROUPCOM
   if (ctx->mode == OSCORE_GROUP){
-    encrypt_len = coap_pkt->payload_len - ES256_SIGNATURE_LEN;
+    encrypt_len = coap_pkt->payload_len - ECC_SIGNATURE_LEN;
   }
 #endif /* WITH_GROUPCOM */
   uint8_t tmp_buffer[encrypt_len];
@@ -404,8 +404,8 @@ oscore_populate_cose(coap_message_t *pkt, cose_encrypt0_t *cose, oscore_ctx_t *c
 
 /* Global buffers since oscore_prepare_message() return before message is sent. */
 #ifdef WITH_GROUPCOM
-uint8_t content_buffer[COAP_MAX_CHUNK_SIZE + COSE_algorithm_AES_CCM_16_64_128_TAG_LEN + ES256_SIGNATURE_LEN];
-uint8_t sign_encoded_buffer[COAP_MAX_CHUNK_SIZE + COSE_algorithm_AES_CCM_16_64_128_TAG_LEN + ES256_SIGNATURE_LEN]; //TODO come up with a better way to size buffer
+uint8_t content_buffer[COAP_MAX_CHUNK_SIZE + COSE_algorithm_AES_CCM_16_64_128_TAG_LEN + ECC_SIGNATURE_LEN];
+uint8_t sign_encoded_buffer[COAP_MAX_CHUNK_SIZE + COSE_algorithm_AES_CCM_16_64_128_TAG_LEN + ECC_SIGNATURE_LEN]; //TODO come up with a better way to size buffer
 uint8_t option_value_buffer[15];
 #endif /* WITH_GROUPCOM */
 
@@ -486,7 +486,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   coap_set_header_object_security(coap_pkt, option_value_buffer, option_value_len);
 
 #ifdef WITH_GROUPCOM
-  int total_len = ciphertext_len + ES256_SIGNATURE_LEN;
+  int total_len = ciphertext_len + ECC_SIGNATURE_LEN;
 
   //set the keys and algorithms
   oscore_populate_sign(coap_is_request(coap_pkt), sign, ctx, OSCORE_SENDING_MESSAGE);

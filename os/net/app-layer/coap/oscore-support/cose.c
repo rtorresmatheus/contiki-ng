@@ -200,7 +200,7 @@ int cose_sign1_get_signature(cose_sign1_t *ptr, uint8_t **buffer){
 
 void cose_sign1_set_signature(cose_sign1_t *ptr, uint8_t *buffer){
   ptr->signature = buffer;
-  ptr->signature_len = ES256_SIGNATURE_LEN;
+  ptr->signature_len = ECC_SIGNATURE_LEN;
 }
 
 void cose_sign1_set_sigstructure(cose_sign1_t *ptr, uint8_t *buffer, int size){
@@ -210,12 +210,12 @@ void cose_sign1_set_sigstructure(cose_sign1_t *ptr, uint8_t *buffer, int size){
 
 void cose_sign1_set_public_key(cose_sign1_t *ptr, uint8_t *buffer){
   ptr->public_key = buffer;
-  ptr->public_key_len = ES256_PUBLIC_KEY_LEN;
+  ptr->public_key_len = ECC_PUBLIC_KEY_LEN;
 }
 
 void cose_sign1_set_private_key(cose_sign1_t *ptr, uint8_t *buffer){
   ptr->private_key = buffer;
-  ptr->private_key_len = ES256_PRIVATE_KEY_LEN;
+  ptr->private_key_len = ECC_PRIVATE_KEY_LEN;
 }
 
 int cose_sign1_sign(cose_sign1_t *ptr){

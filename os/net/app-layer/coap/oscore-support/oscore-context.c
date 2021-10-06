@@ -350,27 +350,27 @@ oscore_add_group_keys(oscore_ctx_t *ctx,
 
     if (snd_private_key != NULL){
       memcpy(ctx->sender_context->private_key, snd_private_key,  
-                                        ES256_PRIVATE_KEY_LEN);
+                                        ECC_PRIVATE_KEY_LEN);
       ctx->sender_context->private_key_len = 
-                                         ES256_PRIVATE_KEY_LEN;
+                                         ECC_PRIVATE_KEY_LEN;
     }
     if (snd_public_key != NULL){
       memcpy(ctx->sender_context->public_key, snd_public_key,  
-                                        ES256_PUBLIC_KEY_LEN);
+                                        ECC_PUBLIC_KEY_LEN);
       ctx->sender_context->public_key_len = 
-                                          ES256_PUBLIC_KEY_LEN;
+                                          ECC_PUBLIC_KEY_LEN;
     }
     if (rcv_private_key != NULL){
       memcpy(ctx->recipient_context->private_key,
-                      rcv_private_key, ES256_PRIVATE_KEY_LEN);
+                      rcv_private_key, ECC_PRIVATE_KEY_LEN);
       ctx->recipient_context->private_key_len = 
-                                         ES256_PRIVATE_KEY_LEN;
+                                         ECC_PRIVATE_KEY_LEN;
     }
     if (rcv_public_key != NULL){
       memcpy(ctx->recipient_context->public_key, rcv_public_key,  
-                                        ES256_PUBLIC_KEY_LEN); 
+                                        ECC_PUBLIC_KEY_LEN); 
       ctx->recipient_context->public_key_len = 
-                                          ES256_PUBLIC_KEY_LEN;
+                                          ECC_PUBLIC_KEY_LEN;
     } 
     /*if (coap_get_log_level() >= LOG_INFO){ 
       int key_len= 0;
