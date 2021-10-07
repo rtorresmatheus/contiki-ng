@@ -633,8 +633,7 @@ oscore_clear_options(coap_message_t *coap_pkt)
 oscore_validate_sender_seq(oscore_recipient_ctx_t *ctx, cose_encrypt0_t *cose)
 {
   int64_t incomming_seq = btou64(cose->partial_iv, cose->partial_iv_len);
-  //todo add LOG_DBG here 
-  LOG_DBG_("Incomming SEQ %" PRIi64 "\n", incomming_seq);
+  LOG_DBG("Incomming SEQ %" PRIi64 "\n", incomming_seq);
   ctx->rollback_largest_seq = ctx->largest_seq;
   ctx->rollback_sliding_window = ctx->sliding_window;
 

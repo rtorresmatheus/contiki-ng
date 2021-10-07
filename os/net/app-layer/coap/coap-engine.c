@@ -77,7 +77,8 @@ void send_delayed_response_callback(void *data)
   mid_ = (uint16_t *) data;
   if((trans = coap_get_transaction_by_mid(*mid_))) {
     LOG_DBG("Transaction found! Sending...\n");
-    coap_send_transaction(trans);
+    coap_send_multicast_transaction(trans);
+    //coap_send_transaction(trans);
     ctimer_stop(&dr_timer);
   } else {
     LOG_DBG("No transaction found, no response will be sent...\n");
@@ -507,7 +508,7 @@ int coap_receive(const coap_endpoint_t *src,
     coap_sendto(src, payload, coap_serialize_message(message, payload));
 
   }
-  /* if(new data) */
+  /* if(new datF Multicast transaction Timeouta) */
   return coap_status_code;
 }
 /*---------------------------------------------------------------------------*/
