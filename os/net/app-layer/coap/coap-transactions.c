@@ -170,13 +170,13 @@ coap_send_transaction(coap_transaction_t *t)
        and then remove the transaction. Not the most elegant solution, but it works. */
     if(t->retrans_counter <= COAP_MAX_RETRANSMIT) {
       coap_sendto(&t->endpoint, t->message, t->message_len);
-      LOG_DBG("Keeping NON transaction %u\n", t->mid);
+      LOG_DBG("F Keeping NON transaction %u\n", t->mid);
 
       if(t->retrans_counter == 0) {
         coap_timer_set_callback(&t->retrans_timer, coap_retransmit_transaction);
         coap_timer_set_user_data(&t->retrans_timer, t);
         t->retrans_interval = COAP_MULTICAST_REQUEST_TIMEOUT_INTERVAL;
-        LOG_DBG("Initial interval %lu msec\n",
+        LOG_DBG("F Initial interval %lu msec\n",
             (unsigned long)t->retrans_interval);
       }
       /* Supress retransmissions */
@@ -186,7 +186,7 @@ coap_send_transaction(coap_transaction_t *t)
       coap_timer_set(&t->retrans_timer, t->retrans_interval);
     } else {
       /* timed out */
-      LOG_DBG("Multicast transaction Timeout\n");
+      LOG_DBG("F Multicast transaction Timeout\n");
       coap_resource_response_handler_t callback = t->callback;
       void *callback_data = t->callback_data;
 

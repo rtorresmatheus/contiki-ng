@@ -42,16 +42,16 @@
 #include <inttypes.h>
 
 #if WITH_GROUPCOM == 1
-#define COSE_Algorithm_ES256	 -7
-#define COSE_Elliptic_Curve_P256  1
-#define ES256_SIGNATURE_LEN      64
-#define ES256_PRIVATE_KEY_LEN  	 32
-#define ES256_PUBLIC_KEY_LEN     64
-#define COSE_Algorithm_ED25519	 -7
-#define COSE_Elliptic_Curve_ED25519 1
-#define ED25519_SIGNATURE_LEN    64
-#define ED25519_PRIVATE_KEY_LEN  32
-#define ED25519_PUBLIC_KEY_LEN   32
+#define COSE_Algorithm_ES256	        -7
+#define COSE_Elliptic_Curve_P256         1
+#define ES256_SIGNATURE_LEN             64
+#define ES256_PRIVATE_KEY_LEN  	        32
+#define ES256_PUBLIC_KEY_LEN            64
+#define COSE_Algorithm_ED25519	        -8
+#define COSE_Elliptic_Curve_ED25519      6
+#define ED25519_SIGNATURE_LEN           64
+#define ED25519_PRIVATE_KEY_LEN         32
+#define ED25519_PUBLIC_KEY_LEN          32
 
 #ifdef WITH_ES256
 

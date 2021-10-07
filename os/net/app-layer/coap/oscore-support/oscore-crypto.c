@@ -974,12 +974,15 @@ verify_time_s = RTIMER_NOW();
 	dtls_sha256_update(&msg_hash_ctx, buffer, buffer_len);
 	dtls_sha256_final(message_hash, &msg_hash_ctx);
 	PT_SPAWN(&state->pt, &state->verify_sw_pt, ecc_verify_sw(state, public_key, message_hash, signature));
-        printf("state->verify_state %d\n", state->verify_state);
         /* state->verify_state is set in ecc_verify_sw */
 #else /* WITH_ED25519 */
+        /* edsign_verify() return 0 on failure, non-zero on success. */
         uint8_t res = edsign_verify(signature, public_key, buffer, buffer_len);
-        state->verify_state = res;
-        printf("ED25519 state->verify_state %d\n", state->verify_state);
+        if(res != 0){
+          state->verify_state = 0;
+        } else {
+          state->verify_state = 1;
+        }
 
 #endif /* WITH_ES256 */
 #else 

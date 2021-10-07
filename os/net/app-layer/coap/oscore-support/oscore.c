@@ -549,9 +549,16 @@ oscore_prepare_aad(coap_message_t *coap_pkt, cose_encrypt0_t *cose, uint8_t *buf
     external_aad_len += cbor_put_unsigned(&external_aad_ptr, (coap_pkt->security_context->alg)); 
     external_aad_len += cbor_put_negative(&external_aad_ptr, -(coap_pkt->security_context->counter_signature_algorithm)); 
     external_aad_len += cbor_put_unsigned(&external_aad_ptr, (coap_pkt->security_context->counter_signature_parameters)); 
-    external_aad_len += cbor_put_array(&external_aad_ptr, 2); /* Countersign Key Parameters array */
-    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 26); /*ECDSA_256 Hard coded */ 
-    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 1); /*ECDSA_256 Hard coded */ 
+/* Countersign Key Parameters array */
+#ifdef WITH_ES256
+    external_aad_len += cbor_put_array(&external_aad_ptr, 2);
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 26); 
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 1);
+#else /* WITH_ED25519 */
+    external_aad_len += cbor_put_array(&external_aad_ptr, 2);
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 1); 
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 6);
+#endif /* WITH_ES256 */
   } else {
     external_aad_len += cbor_put_array(&external_aad_ptr, 1); /* Algoritms array */
     external_aad_len += cbor_put_unsigned(&external_aad_ptr, (coap_pkt->security_context->alg)); /* Algorithm */
@@ -772,10 +779,16 @@ oscore_prepare_int(oscore_ctx_t *ctx, cose_encrypt0_t *cose, uint8_t *oscore_opt
     external_aad_len += cbor_put_unsigned(&external_aad_ptr, 
         ctx->counter_signature_parameters);
     /* Signature algorithm array */
+/* Countersign Key Parameters array */
+#ifdef WITH_ES256
     external_aad_len += cbor_put_array(&external_aad_ptr, 2);
     external_aad_len += cbor_put_unsigned(&external_aad_ptr, 26); 
     external_aad_len += cbor_put_unsigned(&external_aad_ptr, 1);
-    /* fill in correct 1 and 6  */
+#else /* WITH_ED25519 */
+    external_aad_len += cbor_put_array(&external_aad_ptr, 2);
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 1); 
+    external_aad_len += cbor_put_unsigned(&external_aad_ptr, 6);
+#endif /* WITH_ES256 */
   }
   //Request Key ID should go here
   external_aad_len += cbor_put_bytes(&external_aad_ptr, cose->key_id, cose->key_id_len);
