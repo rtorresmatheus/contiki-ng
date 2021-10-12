@@ -109,7 +109,8 @@ static struct pt_sem crypto_processor_mutex;
 #ifdef WITH_ES256
 #include "uECC.h"
 #else 
-#include "edsign.h"
+#include "monocypher-ed25519.h"
+#include "monocypher.h"
 #endif /* WITH_ES256 */
 #endif /*OSCORE_WITH_HW_CRYPTO == 1*/
 
@@ -826,7 +827,8 @@ sign_time_s = RTIMER_NOW();
  	PT_SPAWN(&state->pt, &state->sign_deterministic_pt, ecc_sign_deterministic(state, private_key, message_hash, &ctx.uECC, signature));
 
 #else /* WITH_ED25519 */
-        edsign_sign(signature, public_key, private_key, buffer, msg_len);
+//        edsign_sign(signature, public_key, private_key, buffer, msg_len);
+        crypto_ed25519_sign(signature, private_key, public_key, buffer, msg_len);
 #endif /* WITH_ES256 */
 	state->sig_len = ECC_SIGNATURE_LEN;
 
@@ -978,13 +980,8 @@ verify_time_s = RTIMER_NOW();
 	PT_SPAWN(&state->pt, &state->verify_sw_pt, ecc_verify_sw(state, public_key, message_hash, signature));
         /* state->verify_state is set in ecc_verify_sw */
 #else /* WITH_ED25519 */
-        /* edsign_verify() return 0 on failure, non-zero on success. */
-        uint8_t res = edsign_verify(signature, public_key, buffer, buffer_len);
-        if(res != 0){
-          state->verify_state = 0;
-        } else {
-          state->verify_state = 1;
-        }
+        /* crypto_ed25519_check() return 0 on success, -1 on failure. */
+        state->verify_state = crypto_ed25519_check(signature, public_key, buffer, buffer_len);
 
 #endif /* WITH_ES256 */
 #else 

@@ -112,7 +112,7 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
       CFLAGS += -DuECC_SUPPORT_COMPRESSED_POINT=0
       CFLAGS += -DWITH_ES256
     else #With EDDSA25519
-      MODULES += os/net/app-layer/coap/oscore-support/c25519 
+      MODULES += os/net/app-layer/coap/oscore-support/monocypher 
       CFLAGS += -DWATCHDOG_CONF_ENABLE=0
       CFLAGS += -DWITH_ED25519
     endif # MAKE_WITH_ES256
@@ -149,8 +149,10 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
       CFLAGS += -DuECC_SUPPORT_COMPRESSED_POINT=0
       CFLAGS += -DWITH_ES256
     else #With EDDSA25519
-      MODULES += os/net/app-layer/coap/oscore-support/c25519 
+      MODULES += os/net/app-layer/coap/oscore-support/monocypher 
       CFLAGS += -DWATCHDOG_CONF_ENABLE=0
+      CFLAGS += -DCC2538_CONF_STACK_SIZE=1000 #Increase stack size
+      CFLAGS += -DLPM_CONF_MAX_PM=1 #Disable PM2 to increase available RAM
       CFLAGS += -DWITH_ED25519
     endif # MAKE_WITH_ES256
   endif #MAKE_WITH_HW_CRYPTO
@@ -177,7 +179,7 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
       CFLAGS += -DuECC_SUPPORT_COMPRESSED_POINT=0
       CFLAGS += -DWITH_ES256
     else #With EDDSA25519
-      MODULES += os/net/app-layer/coap/oscore-support/c25519 
+      MODULES += os/net/app-layer/coap/oscore-support/monocypher 
       CFLAGS += -DWITH_ED25519
     endif # MAKE_WITH_ES256
   endif

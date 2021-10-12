@@ -101,10 +101,17 @@ void uart1_isr(void);
 #else
 #define FLASH_CCA_BOOTLDR_CFG FLASH_CCA_BOOTLDR_CFG_DISABLE
 #endif
+
+#ifndef CC2538_CONF_STACK_SIZE
+#define CC2538_STACK_SIZE 256
+#else 
+#define CC2538_STACK_SIZE CC2538_CONF_STACK_SIZE
+#endif
+
 /*---------------------------------------------------------------------------*/
 /* Allocate stack space */
 //356 works just fine
-static uint64_t stack[256] __attribute__ ((section(".stack")));
+static uint64_t stack[CC2538_STACK_SIZE] __attribute__ ((section(".stack")));
 /*---------------------------------------------------------------------------*/
 __attribute__((__section__(".vectors")))
 void(*const vectors[])(void) =
