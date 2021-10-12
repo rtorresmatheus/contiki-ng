@@ -67,8 +67,36 @@
 #define MSGS_TO_VERIFY_SIZE 1
 #define MSGS_TO_SIGN_SIZE 1
 
+#define STACK_CHECK_CONF_ENABLED 0 
+#define PROCESSING_TIME 1
 
+#ifdef PROCESSING_TIME
+extern unsigned long parsing_time_s;
+extern unsigned long parsing_time_e;
+extern unsigned long serializing_time_s;
+extern unsigned long serializing_time_e;
+#ifdef WITH_OSCORE
+extern unsigned long decryption_time_s;
+extern unsigned long decryption_time_e;
+extern unsigned long encryption_time_s;
+extern unsigned long encryption_time_e;
+#ifdef WITH_GROUPCOM
+extern unsigned long verify_time_s;
+extern unsigned long verify_time_e;
+extern unsigned long sign_time_s;
+extern unsigned long sign_time_e;
+#endif /* WITH_GROUPCOM */
+#endif /* WITH_OSCORE */
+#endif /* PROCESSING_TIME */
+
+
+/*
 #define LOG_LEVEL_APP LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_COAP LOG_LEVEL_DBG
-//#define LOG_CONF_LEVEL_TCPIP LOG_LEVEL_DBG
+#define LOG_CONF_LEVEL_TCPIP LOG_LEVEL_DBG
+*/
+#define LOG_LEVEL_APP LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_COAP LOG_LEVEL_NONE
+#define LOG_CONF_LEVEL_TCPIP LOG_LEVEL_NONE
+
 #endif /* PROJECT_CONF_H_ */

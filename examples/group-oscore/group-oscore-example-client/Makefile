@@ -14,7 +14,7 @@ MAKE_WITH_OSCORE = 1
 MAKE_WITH_GROUPCOM = 1
 MAKE_WITH_HW_CRYPTO = 0
 
-MAKE_WITH_ES256 = 0
+MAKE_WITH_ES256 = 1
 
 # Include the CoAP implementation
 include $(CONTIKI)/Makefile.dir-variables

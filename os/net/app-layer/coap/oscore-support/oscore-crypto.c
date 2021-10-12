@@ -749,19 +749,19 @@ typedef struct SHA256_HashContext {
     dtls_sha256_ctx ctx;
 } SHA256_HashContext;
 
-static void init_SHA256(uECC_HashContext *base) {
+static void init_SHA256(const uECC_HashContext *base) {
     SHA256_HashContext *context = (SHA256_HashContext *)base;
     dtls_sha256_init(&context->ctx);
 }
 
-static void update_SHA256(uECC_HashContext *base,
+static void update_SHA256(const uECC_HashContext *base,
                           const uint8_t *message,
                           unsigned message_size) {
     SHA256_HashContext *context = (SHA256_HashContext *)base;
     dtls_sha256_update(&context->ctx, message, message_size);
 }
 
-static void finish_SHA256(uECC_HashContext *base, uint8_t *hash_result) {
+static void finish_SHA256(const uECC_HashContext *base, uint8_t *hash_result) {
     SHA256_HashContext *context = (SHA256_HashContext *)base;
     dtls_sha256_final(hash_result, &context->ctx);
 }
@@ -770,7 +770,8 @@ PT_THREAD(ecc_sign_deterministic(sign_state_t *state, uint8_t *private_key, uint
 {
 	PT_BEGIN(&state->sign_deterministic_pt);
 	uint8_t res = -1;
-	res = uECC_sign_deterministic(private_key, message_hash, hash_context, signature);
+        const struct uECC_Curve_t* curve = uECC_secp256r1();
+	res = uECC_sign_deterministic(private_key, message_hash, SHA256_DIGEST_LENGTH, hash_context, signature, curve);
 	if(res != 1) {
 		LOG_ERR("Deterministic sign in SW failed with code %d!\n", res);
 		PT_EXIT(&state->sign_deterministic_pt);
@@ -782,7 +783,8 @@ PT_THREAD(ecc_verify_sw(verify_state_t *state, uint8_t *public_key, uint8_t *mes
 {
 	PT_BEGIN(&state->verify_sw_pt);
 	uint8_t res = -1;
-        res = uECC_verify(public_key, message_hash, signature);
+        const struct uECC_Curve_t* curve = uECC_secp256r1();
+        res = uECC_verify(public_key, message_hash, SHA256_DIGEST_LENGTH, signature, curve);
         if(res != 1) {
 		LOG_ERR("Deterministic verify software FAILED with code %d!\n", res);
 	        state->verify_state = 1;
@@ -820,7 +822,7 @@ sign_time_s = RTIMER_NOW();
 	dtls_sha256_final(message_hash, &msg_hash_ctx);
 
 	uint8_t tmp[ECC_PRIVATE_KEY_LEN + ECC_PRIVATE_KEY_LEN + ECC_SIGNATURE_LEN];
-	SHA256_HashContext ctx = {{&init_SHA256, &update_SHA256, &finish_SHA256, 64, 32, tmp}};
+	SHA256_HashContext ctx = {{&init_SHA256, &update_SHA256, &finish_SHA256, SHA256_BLOCK_LENGTH, SHA256_DIGEST_LENGTH, tmp}};
  	PT_SPAWN(&state->pt, &state->sign_deterministic_pt, ecc_sign_deterministic(state, private_key, message_hash, &ctx.uECC, signature));
 
 #else /* WITH_ED25519 */
