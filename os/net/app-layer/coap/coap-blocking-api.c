@@ -106,8 +106,6 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
       coap_set_oscore(request);
       request->security_context = context;
       //TODO maybe an if and random token should be added here
-      uint8_t token[2] = {0xA, 0xA};
-      coap_set_token(request, token, 2);
     } else {
       LOG_ERR("NO OSCORE!\n");
       LOG_ERR("URL %s \n", uri);
@@ -172,6 +170,7 @@ coap_blocking_request_callback(void *callback_data, coap_message_t *response)
   PT_END(&blocking_state->pt);
 }
 /*---------------------------------------------------------------------------*/
+#ifdef WITH_GROUPCOM
 PT_THREAD(coap_multicast_blocking_request
       (coap_blocking_request_state_t *blocking_state, process_event_t ev,
        coap_endpoint_t *remote_ep,
@@ -243,5 +242,6 @@ PT_THREAD(coap_multicast_blocking_request
   }
   PT_END(&blocking_state->pt);
 }
+#endif /* WITH_GROUPCOM */
 /*---------------------------------------------------------------------------*/
 /** @} */

@@ -31,59 +31,22 @@
 
 /**
  * \file
- *      Erbium (Er) CoAP Engine example.
+ *      Erbium (Er) example project configuration.
  * \author
  *      Matthias Kovatsch <kovatsch@inf.ethz.ch>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "contiki.h"
-#include "coap-engine.h"
-#include "oscore.h"
+#ifndef PROJECT_CONF_H_
+#define PROJECT_CONF_H_
 
-/* Keys included from file */
-#include "../server-keys.h"
+#include "net/ipv6/multicast/uip-mcast6-engines.h"
+#include "../common-conf.h"
 
-/* Log configuration */
-#include "sys/log.h"
-#define LOG_MODULE "App"
-#define LOG_LEVEL LOG_LEVEL_APP
-/*
- * Resources to be activated need to be imported through the extern keyword.
- * The build system automatically compiles the resources in the corresponding sub-directory.
- */
-extern coap_resource_t
-  res_post;
+#define COAP_MAX_ATTEMPTS 1
+ 
+/* Change this to switch engines. Engine codes in uip-mcast6-engines.h */
+#ifndef UIP_MCAST6_CONF_ENGINE
+#define UIP_MCAST6_CONF_ENGINE UIP_MCAST6_ENGINE_SMRF 
+#endif
 
-
-PROCESS(er_example_server, "Erbium Example Server");
-AUTOSTART_PROCESSES(&er_example_server);
-PROCESS_THREAD(er_example_server, ev, data)
-{
-  PROCESS_BEGIN();
-
-  PROCESS_PAUSE();
-
-  LOG_INFO("Starting Group OSCORE Server\n");
-
-  oscore_init_server();
-
-  /*Derive an OSCORE-Security-Context. */
-  static oscore_ctx_t *context;
-  context = oscore_derive_ctx(master_secret, 16, salt, 8, 10, server_id, 1, client_id, 1, group_id, 3, OSCORE_DEFAULT_REPLAY_WINDOW);
-  if(!context){
-        LOG_ERR("Could not create OSCORE Security Context!\n");
-  }
-
-  oscore_add_group_keys(context, server_public_key, server_private_key, client_public_key, COSE_Algorithm_ES256, COSE_Elliptic_Curve_P256);  
-  coap_activate_resource(&res_post, "mc/post");
-  oscore_protect_resource(&res_post);
-  /* Define application-specific events here. */
-  while(1) {
-    PROCESS_WAIT_EVENT();
-  }                             /* while (1) */
-
-  PROCESS_END();
-}
+#endif /* PROJECT_CONF_H_ */

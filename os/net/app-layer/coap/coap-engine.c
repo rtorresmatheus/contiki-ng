@@ -385,21 +385,21 @@ int coap_receive(const coap_endpoint_t *src,
         coap_clear_transaction(transaction);
         /* check if someone registered for the response */
         if(callback) {
-          printf("callback\n");
           callback(callback_data, message);
         }
-      } else if((transaction = coap_get_transaction_by_token(message->token, message->token_len))) {
+      }
+      #if WITH_GROUPCOM
+      else if((transaction = coap_get_transaction_by_token(message->token, message->token_len))) {
         /* free transaction memory before callback, as it may create a new transaction */
         coap_resource_response_handler_t callback = transaction->callback;
         void *callback_data = transaction->callback_data;
-        #ifndef WITH_GROUPCOM
-        coap_clear_transaction(transaction); 
-        #endif /* WITH_GROUPCOM */
+        //coap_clear_transaction(transaction); 
         /* check if someone registered for the response */
         if(callback) {
           callback(callback_data, message);
         }
       }
+      #endif /* WITH_GROUPCOM */
       /* if(ACKed transaction) */
       transaction = NULL;
 #if COAP_OBSERVE_CLIENT
@@ -463,16 +463,16 @@ int coap_receive(const coap_endpoint_t *src,
     coap_transaction_t *t = coap_get_transaction_by_mid(message->mid);
 
     /* free transaction memory before callback, as it may create a new transaction */
-  //  coap_resource_response_handler_t callback = t->callback;
-  //  void *callback_data = t->callback_data;
+    coap_resource_response_handler_t callback = t->callback;
+    void *callback_data = t->callback_data;
     //TODO if multicast the transaction shall not be freed. 
     message->code = OSCORE_DECRYPTION_ERROR;
     coap_clear_transaction(t);
     LOG_DBG("Returning TODO send empty ACK!\n");
     /* check if someone registered for the response */
-    //if(callback) {
-    //  callback(callback_data, message);
-    //}
+    if(callback) { //Maybe not do this for Group-OSCORE?
+      callback(callback_data, message);
+    }
 
     return coap_status_code;
   } else {

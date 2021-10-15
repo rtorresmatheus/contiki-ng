@@ -108,13 +108,8 @@ bytes_equal(uint8_t *a_ptr, uint8_t a_len, uint8_t *b_ptr, uint8_t b_len)
   }
 }
 
-#ifdef WITH_GROUPCOM
-oscore_ctx_t *
-oscore_derive_ctx(uint8_t *master_secret, uint8_t master_secret_len, uint8_t *master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t *sid, uint8_t sid_len, uint8_t *rid, uint8_t rid_len, uint8_t *id_context, uint8_t id_context_len, uint8_t replay_window, uint8_t *gid)
-#else
 oscore_ctx_t *
 oscore_derive_ctx(uint8_t *master_secret, uint8_t master_secret_len, uint8_t *master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t *sid, uint8_t sid_len, uint8_t *rid, uint8_t rid_len, uint8_t *id_context, uint8_t id_context_len, uint8_t replay_window)
-#endif
 {
 
   oscore_ctx_t *common_ctx = memb_alloc(&common_context_memb);
@@ -333,7 +328,6 @@ oscore_add_group_keys(oscore_ctx_t *ctx,
    uint8_t *snd_public_key, 
    uint8_t *snd_private_key,
    uint8_t *rcv_public_key, 
-   uint8_t *rcv_private_key,
    int8_t counter_signature_algorithm,
    int8_t counter_signature_parameters)
 {
@@ -345,7 +339,6 @@ oscore_add_group_keys(oscore_ctx_t *ctx,
 
     ctx->sender_context->private_key_len    = 0;
     ctx->sender_context->public_key_len     = 0;
-    ctx->recipient_context->private_key_len = 0;
     ctx->recipient_context->public_key_len  = 0;
 
     if (snd_private_key != NULL){
@@ -359,12 +352,6 @@ oscore_add_group_keys(oscore_ctx_t *ctx,
                                         ECC_PUBLIC_KEY_LEN);
       ctx->sender_context->public_key_len = 
                                           ECC_PUBLIC_KEY_LEN;
-    }
-    if (rcv_private_key != NULL){
-      memcpy(ctx->recipient_context->private_key,
-                      rcv_private_key, ECC_PRIVATE_KEY_LEN);
-      ctx->recipient_context->private_key_len = 
-                                         ECC_PRIVATE_KEY_LEN;
     }
     if (rcv_public_key != NULL){
       memcpy(ctx->recipient_context->public_key, rcv_public_key,  

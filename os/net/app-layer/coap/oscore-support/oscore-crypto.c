@@ -1148,6 +1148,18 @@ PROCESS_THREAD(signer, ev, data)
 			static sign_state_t state;
 			state.process = &signer;
 			PROCESS_PT_SPAWN(&state.pt, ecc_sign(&state, item->message, item->message_len, item->private_key, item->public_key, item->signature));
+                        LOG_INFO("Signing Private Key: [");
+                        LOG_DBG_COAP_BYTES(item->private_key, ECC_PRIVATE_KEY_LEN);
+                        LOG_DBG_("]\n");
+                        LOG_INFO("Signing Public Key: [");
+                        LOG_DBG_COAP_BYTES(item->public_key, ECC_PUBLIC_KEY_LEN);
+                        LOG_DBG_("]\n");
+                        LOG_INFO("Signing Buffer: [");
+                        LOG_DBG_COAP_BYTES(item->message, item->message_len);
+                        LOG_DBG_("]\n");
+                        LOG_INFO("Signature: [");
+                        LOG_DBG_COAP_BYTES(item->signature, ECC_SIGNATURE_LEN);
+                        LOG_DBG_("]\n");
 #if defined OSCORE_WITH_HW_CRYPTO && defined CONTIKI_TARGET_ZOUL
 			item->result = state.ecc_sign_state.result;
 #endif /* OSCORE_WITH_HW_CRYPTO && CONTIKI_TARGET_ZOUL */
@@ -1211,6 +1223,15 @@ PROCESS_THREAD(verifier, ev, data)
 			item = (messages_to_verify_entry_t *) queue_dequeue(messages_to_verify);
 			static verify_state_t state;
 			state.process = &verifier;
+                        LOG_INFO("Verifying Public Key: [");
+                        LOG_DBG_COAP_BYTES(item->public_key, ECC_PUBLIC_KEY_LEN);
+                        LOG_DBG_("]\n");
+                        LOG_INFO("Verifying Buffer: [");
+                        LOG_DBG_COAP_BYTES(item->message, item->message_len);
+                        LOG_DBG_("]\n");
+                        LOG_INFO("Verifying Signature: [");
+                        LOG_DBG_COAP_BYTES(item->signature, ECC_SIGNATURE_LEN);
+                        LOG_DBG_("]\n");
 			PROCESS_PT_SPAWN(&state.pt, ecc_verify(&state, item->public_key, item->message, item->message_len, item->signature));
 #ifdef OSCORE_WITH_HW_CRYPTO
 #ifdef CONTIKI_TARGET_ZOUL

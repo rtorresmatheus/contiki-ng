@@ -14,11 +14,32 @@ MODULES += os/net/app-layer/coap
 # Include the Multicast implementation
 MODULES += os/net/ipv6/multicast
 
-#Determine what tetst to build, 4 (RTT) by default
+#Determine what test to build, 4 (RTT) by default
 ifeq ($(strip $(TEST)),)
 CFLAGS += -DTEST=4
 else
 CFLAGS += -DTEST=$(TEST)
+endif
+
+#Determine what server to build, 1 by default
+ifeq ($(strip $(SERVER)),)
+CFLAGS += -DSERVER=1
+else
+CFLAGS += -DSERVER=$(SERVER)
+endif
+
+#Determine what ECDSA algorithm to use, ECDSA P-256 by default
+ifeq ($(strip $(ED25519)),1)
+MAKE_WITH_ES256 = 0
+else
+MAKE_WITH_ES256 = 1
+endif
+
+#Determine usage of HW/SW cryptography, SW by default 
+ifeq ($(strip $(HW)),1)
+MAKE_WITH_HW_CRYPTO = 1
+else
+MAKE_WITH_HW_CRYPTO = 0
 endif
 
 # Include CoAP resources

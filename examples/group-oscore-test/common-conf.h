@@ -29,9 +29,9 @@
 /*For testing*/
 #define LOG_LEVEL_APP           LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_COAP     LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_DBG
-#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_DBG
+//#define LOG_CONF_LEVEL_MAIN     LOG_LEVEL_DBG
+//#define LOG_CONF_LEVEL_TCPIP    LOG_LEVEL_DBG
+//#define LOG_CONF_LEVEL_IPV6     LOG_LEVEL_DBG
 /* For debug */
 /*
 #define LOG_LEVEL_APP           LOG_LEVEL_DBG
@@ -43,32 +43,37 @@
 #define LOG_CONF_LEVEL_MAC      LOG_LEVEL_DBG
 */
 
+//#define UIP_MCAST6_ROUTE_CONF_ROUTES 5
+
+//#ifndef NETSTACK_MAX_ROUTE_ENTRIES
+//#define NETSTACK_MAX_ROUTE_ENTRIES  5
+//#endif
+
+//#define NBR_TABLE_CONF_MAX_NEIGHBORS 5
+
+
+#define COAP_CONF_MULTICAST_RESPONSE_DELAY 5
+#define COAP_CONF_MULTICAST_REQUEST_TIMEOUT_INTERVAL 10000
+#define CONTEXT_NUM 5
+#define TOKEN_SEQ_NUM 5
+#define EP_CTX_NUM 5
+
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
 #define RF_CONF_MODE RF_MODE_2_4_GHZ
 #define ROLL_TM_CONF_IMIN_1         64
 
-#define UIP_MCAST6_ROUTE_CONF_ROUTES 3
-
-/* Code/RAM footprint savings so that things will fit on our device */
-#ifndef NETSTACK_MAX_ROUTE_ENTRIES
-#define NETSTACK_MAX_ROUTE_ENTRIES  3
-#endif
-
-#ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS 3 
-#endif
-
-#define REST_MAX_CHUNK_SIZE 230
-
-#define COAP_GROUPCOM_DELAY 0
+#define REST_MAX_CHUNK_SIZE 250
 
 #define UIP_CONF_UDP_CONNS 4
-#define UIP_CONF_BUFFER_SIZE 360
-#define QUEUEBUF_CONF_NUM 4 
+#define UIP_CONF_BUFFER_SIZE 400
+#define QUEUEBUF_CONF_NUM 8 
 
 #define MSGS_TO_VERIFY_SIZE 1
 #define MSGS_TO_SIGN_SIZE 1
 
+/* Enable more RAM on CC2538 and increase Stack size. */
+#define LPM_CONF_MAX_PM 1
+#define CC2538_CONF_STACK_SIZE 1000
 
 #ifdef PROCESSING_TIME
 extern unsigned long parsing_time_s;

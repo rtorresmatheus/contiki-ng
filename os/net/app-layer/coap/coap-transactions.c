@@ -207,6 +207,7 @@ coap_send_transaction(coap_transaction_t *t)
 #endif /* WITH_GROUPCOM */
 }
 /*---------------------------------------------------------------------------*/
+#if WITH_GROUPCOM
 void
 coap_send_multicast_transaction(coap_transaction_t *t)
 {
@@ -254,6 +255,7 @@ coap_send_multicast_transaction(coap_transaction_t *t)
   }
   LOG_DBG("returning from send MULTICAST transaction\n");
 }
+#endif /* WITH_GROUPCOM */
 /*---------------------------------------------------------------------------*/
   void
 coap_clear_transaction(coap_transaction_t *t)

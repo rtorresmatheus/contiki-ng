@@ -234,7 +234,7 @@ oscore_decode_message(coap_message_t *coap_pkt)
   coap_status_t ret = oscore_decode_option_value(coap_pkt->object_security, coap_pkt->object_security_len, cose);
 
   if( ret != NO_ERROR){
-    LOG_DBG_("OSCORE option value could not be parsed.\n");
+    LOG_DBG("OSCORE option value could not be parsed.\n");
     coap_error_message = "OSCORE option could not be parsed.";
     return ret;
   }
@@ -276,9 +276,18 @@ oscore_decode_message(coap_message_t *coap_pkt)
     }
     cose_encrypt0_set_key(cose, ctx->recipient_context->recipient_key, COSE_algorithm_AES_CCM_16_64_128_KEY_LEN);
   } else { /* Message is a response */
-    uint64_t seq;
+    uint64_t seq = 0;
     uint8_t seq_buffer[8];
+#ifdef WITH_GROUPCOM
+    uint8_t *key_id;
+    int key_id_len = cose_encrypt0_get_key_id(cose, &key_id);
+    ctx = oscore_find_ctx_by_rid(key_id, key_id_len);
+    LOG_DBG("Fetching OSCORE-Context with RID [");
+    LOG_DBG_COAP_BYTES(key_id, key_id_len);
+    LOG_DBG_("]\n");
+#else 
     ctx = oscore_get_exchange(coap_pkt->token, coap_pkt->token_len, &seq);
+#endif /* WITH_GROUPCOM */
     if(ctx == NULL) {
       LOG_DBG_("OSCORE Security Context not found.\n");
       coap_error_message = "Security context not found";
@@ -436,6 +445,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
 
   /* 2 Compose the AAD and the plaintext, as described in Sections 5.3 and 5.4.*/
   uint8_t plaintext_len = oscore_serializer(coap_pkt, content_buffer, ROLE_CONFIDENTIAL);
+  printf("plaintext_len %d\n", plaintext_len);
   if( plaintext_len > COAP_MAX_CHUNK_SIZE){
     LOG_DBG_("OSCORE Message to large to process.\n");
     return PACKET_SERIALIZATION_ERROR;
@@ -450,6 +460,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   cose_encrypt0_set_nonce(cose, nonce_buffer, COSE_algorithm_AES_CCM_16_64_128_IV_LEN);
 
   if(coap_is_request(coap_pkt)){
+    printf("store exchange seq %llu\n", ctx->sender_context->seq);
     if(!oscore_set_exchange(coap_pkt->token, coap_pkt->token_len, ctx->sender_context->seq, ctx)){
       LOG_DBG("OSCORE Could not store exchange.\n");
       return PACKET_SERIALIZATION_ERROR;
@@ -460,7 +471,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   /*Groupcomm 4.2: The payload of the OSCORE messages SHALL encode the ciphertext of the COSE object
    * concatenated with the value of the CounterSignature0 of the COSE object as in Appendix A.2 of RFC8152
    * according to the Counter Signature Algorithm and Counter Signature Parameters in the Security Context.*/
-
+  printf("cose encrypte len %d\n", cose->content_len);
   int ciphertext_len = cose_encrypt0_encrypt(cose);
   if( ciphertext_len < 0){
     LOG_DBG("OSCORE internal error %d.\n", ciphertext_len);
@@ -510,8 +521,10 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   coap_set_payload(coap_pkt, content_buffer, ciphertext_len);
 #endif /* WITH_GROUPCOM */
 
-  //TODO
+#ifdef WITH_GROUPCOM
+  /* Save request status from being overwritten. */
   uint8_t is_request = coap_is_request(coap_pkt);
+#endif /* WITH_GROUPCOM */
   /* Overwrite the CoAP code. */
   if(coap_is_request(coap_pkt)) {
     coap_pkt->code = COAP_POST;
@@ -728,7 +741,6 @@ oscore_populate_sign(uint8_t coap_is_request, cose_sign1_t *sign, oscore_ctx_t *
     cose_sign1_set_private_key(sign, ctx->sender_context->private_key); 
     cose_sign1_set_public_key(sign, ctx->sender_context->public_key);
   } else {
-    cose_sign1_set_private_key(sign, ctx->recipient_context->private_key); 
     cose_sign1_set_public_key(sign, ctx->recipient_context->public_key);
   }
 }

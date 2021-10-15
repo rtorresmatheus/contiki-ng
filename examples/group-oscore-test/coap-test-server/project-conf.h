@@ -39,7 +39,6 @@
 #ifndef PROJECT_CONF_H_
 #define PROJECT_CONF_H_
 
-#include "net/ipv6/multicast/uip-mcast6-engines.h"
 #include "../common-conf.h"
 
 #endif /* PROJECT_CONF_H_ */

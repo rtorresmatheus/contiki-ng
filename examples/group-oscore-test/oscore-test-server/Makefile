@@ -17,6 +17,12 @@ else
 CFLAGS += -DTEST=$(TEST)
 endif
 
+#Determine what server to build, 1 by default
+ifeq ($(strip $(SERVER)),)
+CFLAGS += -DSERVER=1
+else
+CFLAGS += -DSERVER=$(SERVER)
+endif
 
 # Include CoAP resources
 MODULES_REL += ../resources

@@ -99,8 +99,6 @@ struct oscore_recipient_ctx_t {
 #ifdef WITH_GROUPCOM
   uint8_t public_key[ECC_PUBLIC_KEY_LEN];
   uint8_t public_key_len;
-  uint8_t private_key[ECC_PRIVATE_KEY_LEN];
-  uint8_t private_key_len;
   oscore_recipient_ctx_t *next_recipient; 
   /* This field allows recipient chaining */
 #endif /* WITH_GROUPCOM */
@@ -147,7 +145,6 @@ oscore_add_group_keys(oscore_ctx_t *ctx,
    uint8_t *snd_public_key, 
    uint8_t *snd_private_key,
    uint8_t *rcv_public_key, 
-   uint8_t *rcv_private_key,
    int8_t counter_signature_algorithm,
    int8_t counter_signature_parameters);
 
@@ -155,11 +152,9 @@ oscore_recipient_ctx_t *
 oscore_add_recipient(oscore_ctx_t *ctx, 
         uint8_t *rid, uint8_t rid_len);
 
-//replay window default is 32
-oscore_ctx_t *oscore_derive_ctx(uint8_t *master_secret, uint8_t master_secret_len, uint8_t *master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t *sid, uint8_t sid_len, uint8_t *rid, uint8_t rid_len, uint8_t *id_context, uint8_t id_context_len, uint8_t replay_window, uint8_t *gid);
-#else
-oscore_ctx_t *oscore_derive_ctx(uint8_t *master_secret, uint8_t master_secret_len, uint8_t *master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t *sid, uint8_t sid_len, uint8_t *rid, uint8_t rid_len, uint8_t *id_context, uint8_t id_context_len, uint8_t replay_window);
 #endif
+oscore_ctx_t *oscore_derive_ctx(uint8_t *master_secret, uint8_t master_secret_len, uint8_t *master_salt, uint8_t master_salt_len, uint8_t alg, uint8_t *sid, uint8_t sid_len, uint8_t *rid, uint8_t rid_len, uint8_t *id_context, uint8_t id_context_len, uint8_t replay_window);
+
 int oscore_free_ctx(oscore_ctx_t *ctx);
 
 oscore_ctx_t *oscore_find_ctx_by_rid(uint8_t *rid, uint8_t rid_len);

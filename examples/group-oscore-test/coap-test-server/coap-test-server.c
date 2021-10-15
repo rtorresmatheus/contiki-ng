@@ -42,6 +42,10 @@
 #include "contiki.h"
 #include "coap-engine.h"
 #include "sys/etimer.h"
+
+/* Keys from file */
+#include "../server-keys.h"
+
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -51,9 +55,6 @@
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
 extern coap_resource_t
-#ifdef ENERGEST_CONF_ON
-  res_stat,
-#endif /* ENERGEST_CONF_ON */
   res_post;
 
 PROCESS(er_example_server, "Erbium Example Server");
@@ -65,9 +66,6 @@ PROCESS_THREAD(er_example_server, ev, data)
   PROCESS_PAUSE();
 
   coap_activate_resource(&res_post, "uc/post");
-#ifdef ENERGEST_CONF_ON
-  coap_activate_resource(&res_stat, "uc/stat");
-#endif /* ENERGEST_CONF_ON */
   
   while(1) {
     PROCESS_WAIT_EVENT();

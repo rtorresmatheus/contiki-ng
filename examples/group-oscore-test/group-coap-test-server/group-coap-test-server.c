@@ -54,41 +54,7 @@
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
 extern coap_resource_t
-#ifdef ENERGEST_CONF_ON
-  res_stat,
-#endif /* ENERGEST_CONF_ON */
   res_post;
-
-
-#if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
-static uip_ds6_maddr_t *
-join_mcast_group(void)
-{
-  uip_ipaddr_t addr;
-  uip_ds6_maddr_t *rv;
-  const uip_ipaddr_t *default_prefix = uip_ds6_default_prefix();
-
-  /* First, set our v6 global */
-  uip_ip6addr_copy(&addr, default_prefix);
-  uip_ds6_set_addr_iid(&addr, &uip_lladdr);
-  uip_ds6_addr_add(&addr, 0, ADDR_AUTOCONF);
-
-  /*
-   * IPHC will use stateless multicast compression for this destination
-   * (M=1, DAC=0), with 32 inline bits (1E 89 AB CD)
-   */
-  uip_ip6addr(&addr, 0xFF1E,0,0,0,0,0,0x89,0xABCD);
-  rv = uip_ds6_maddr_add(&addr);
-
-  if(rv) {
-    LOG_INFO("Joined multicast group ");
-    LOG_INFO_6ADDR(&uip_ds6_maddr_lookup(&addr)->ipaddr);
-    LOG_INFO("\n");
-  }
-  return rv;
-}
-#endif
-
 
 PROCESS(er_example_server, "Erbium Example Server");
 AUTOSTART_PROCESSES(&er_example_server);
@@ -96,19 +62,9 @@ PROCESS_THREAD(er_example_server, ev, data)
 {
   PROCESS_BEGIN();
 
-#if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
-//  if(join_mcast_group() == NULL) {
-//    LOG_INFO("Failed to join multicast group\n");
-//    PROCESS_EXIT();
-//  }
-#endif
-
   PROCESS_PAUSE();
 
   coap_activate_resource(&res_post, "mc/post");
-#ifdef ENERGEST_CONF_ON
-  coap_activate_resource(&res_stat, "mc/stat");
-#endif /* ENERGEST_CONF_ON */
   
   while(1) {
     PROCESS_WAIT_EVENT();

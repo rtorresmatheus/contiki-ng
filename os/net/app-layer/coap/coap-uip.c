@@ -96,13 +96,13 @@ PROCESS(coap_engine, "CoAP Engine");
 static struct uip_udp_conn *udp_conn = NULL;
 #ifdef WITH_GROUPCOM
 static uint8_t is_mcast = 0;
+static coap_status_t parse_status; /*TODO enable multiple message processing*/
 /*TODO change checking srcaddr into checking the dst group addr.*/
 #define is_addr_mcast(a)		\
   (((a)->u8[0]) == 0xFF) 
 #ifdef WITH_OSCORE
 static coap_message_t request[1]; /*TODO enable multiple message processing*/
 static coap_message_t response[1];
-static coap_status_t parse_status; /*TODO enable multiple message processing*/
 static uint8_t *verify_result;
 static uint8_t buffer_flag = 0;
 static uint8_t group_oscore_message_buffer[REST_MAX_CHUNK_SIZE];
@@ -424,7 +424,7 @@ process_data(void)
   parse_status = coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), is_mcast);
 #endif /*WITH_OSCORE*/
 #else /* not OSCORE, not GROUPCOM */
-  parse_status = coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), 0);
+  coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen(), 0);
 #endif /*WITH_GROUCPOM*/
 }
 #if defined WITH_GROUPCOM && defined WITH_OSCORE
@@ -480,12 +480,11 @@ coap_sendto(const coap_endpoint_t *ep, const uint8_t *data, uint16_t length)
     }
   }
 #endif /* WITH_DTLS */
-  
   uip_udp_packet_sendto(udp_conn, data, length, &ep->ipaddr, ep->port);
   return length;
 }
 
-#if UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL
+#if WITH_GROUPCOM && ( UIP_MCAST6_CONF_ENGINE != UIP_MCAST6_ENGINE_MPL)
 static uip_ds6_maddr_t *
 join_mcast_group(void)
 {

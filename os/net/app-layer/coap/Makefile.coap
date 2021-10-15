@@ -90,10 +90,14 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
     CFLAGS += -DOSCORE_WITH_HW_CRYPTO=1
     MODULES += arch/cpu/simplelink-cc13xx-cc26xx/lib/coresdk_cc13xx_cc26xx/source/ti/devices/cc13x2_cc26x2/
     MODULES += arch/cpu/simplelink-cc13xx-cc26xx/lib/coresdk_cc13xx_cc26xx/source
+    ifeq ($(strip $(MAKE_WITH_ES256)),1)
+      CFLAGS += -DWITH_ES256
+    else
+      ${error EDDSA25519 is not supported in hardware on this platform.} 
+    endif #MAKE_WITH_ES256
   else  #With SW Crypto
     #Use software AES-CCM implementation.
     CFLAGS += -DCCM_STAR_CONF=ccm_star_driver
-    
     MODULES += os/net/security/tinydtls/sha2
     CFLAGS += -DSHA2_USE_INTTYPES_H -DWITH_SHA256 -DHAVE_ASSERT_H
     ifeq ($(strip $(MAKE_WITH_ES256)),1)
@@ -127,6 +131,11 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
     #Force Zoul to use HW crypto
     CFLAGS += -DCCM_STAR_CONF=cc2538_ccm_star_driver
     CFLAGS += -DWATCHDOG_CONF_ENABLE=0
+    ifeq ($(strip $(MAKE_WITH_ES256)),1)
+      CFLAGS += -DWITH_ES256
+    else
+      ${error EDDSA25519 is not supported in hardware on this platform.} 
+    endif #MAKE_WITH_ES256
   else  #With SW Crypto
     #Force Zoul to use SW crypto
     CFLAGS += -DCCM_STAR_CONF=ccm_star_driver

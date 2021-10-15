@@ -43,6 +43,9 @@
 #include "coap-engine.h"
 #include "oscore.h"
 
+/* Keys included from file */
+#include "../server-keys.h"
+
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -52,15 +55,8 @@
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
 extern coap_resource_t
-#ifdef ENERGEST_CONF_ON
-  res_stat,
-#endif /* ENERGEST_CONF_ON */
   res_post;
 
-uint8_t master_secret[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10 };
-uint8_t salt[8] = {0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40};
-uint8_t sender_id[1] = { 0x52 };
-uint8_t receiver_id[1] = { 0x25 };
 
 PROCESS(er_example_server, "Erbium Example Server");
 AUTOSTART_PROCESSES(&er_example_server);
@@ -76,21 +72,13 @@ PROCESS_THREAD(er_example_server, ev, data)
 
   /*Derive an OSCORE-Security-Context. */
   static oscore_ctx_t *context;
-  context = oscore_derive_ctx(master_secret, 16, salt, 8, 10, sender_id, 1, receiver_id, 1, NULL, 0, OSCORE_DEFAULT_REPLAY_WINDOW);
+  context = oscore_derive_ctx(master_secret, 16, salt, 8, 10, server_id, 1, client_id, 1, NULL, 0, OSCORE_DEFAULT_REPLAY_WINDOW);
   if(!context){
         LOG_ERR("Could not create OSCORE Security Context!\n");
   }
 
-  uint8_t key_id[1] = { 0x25 };
-  oscore_ctx_t *ctx;
-  ctx = oscore_find_ctx_by_rid(key_id, 1);
-  if(ctx == NULL){
-    LOG_ERR("CONTEXT NOT FOUND\n");
-  }
-  #ifdef ENERGEST_CONF_ON
-  coap_activate_resource(&res_stat, "uc/stat");
-  #endif /* ENERGEST_CONF_ON */
   coap_activate_resource(&res_post, "uc/post");
+  oscore_protect_resource(&res_post);
   /* Define application-specific events here. */
   while(1) {
     PROCESS_WAIT_EVENT();
