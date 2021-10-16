@@ -50,13 +50,9 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL  LOG_LEVEL_APP
 
-#define SERVER_NUM 3
 char* server_uris[SERVER_NUM] = {"coap://[fd00::212:4b00:14b5:d967]", "coap://[fd00::212:4b00:14b5:ee10]","coap://[fd00::212:4b00:14b5:de92]" }; 
 
-#define PAYLOAD_NUM 17
 uint8_t payload_lengths[PAYLOAD_NUM] = {1, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128};
-#define ITERATIONS 1
-#define TOGGLE_INTERVAL 10
 
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
@@ -88,7 +84,7 @@ PROCESS_THREAD(er_example_client, ev, data)
   
   static uint8_t token[2] = {0xAA, 0x00};
   static coap_endpoint_t server_eps[SERVER_NUM];
-  static coap_message_t request[SERVER_NUM];      /* This way the packet can be treated as pointer as usual. */
+  static coap_message_t request[SERVER_NUM]; /* This way the packet can be treated as pointer as usual. */
   static int j = 0;
   static int p = 0;
   static int iter = 0;
@@ -102,8 +98,6 @@ PROCESS_THREAD(er_example_client, ev, data)
   while(1) {
     PROCESS_YIELD();
     if(etimer_expired(&et) && p < PAYLOAD_NUM) {
-      //printf("--Toggle timer--\n");
-      
    
       for( j = 0; j < SERVER_NUM; j++){
         coap_init_message(&request[j], COAP_TYPE_CON, COAP_POST, 0); 
@@ -123,8 +117,6 @@ PROCESS_THREAD(er_example_client, ev, data)
       if( iter >= ITERATIONS){ /* If we have done the desired number of iterations we increase the payload length. */
         p++;
       }
-      
-    //  printf("--Done--\n");
 
       etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     } else if(etimer_expired(&et) && p >= PAYLOAD_NUM) {

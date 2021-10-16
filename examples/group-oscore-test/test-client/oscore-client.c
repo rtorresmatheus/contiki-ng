@@ -54,10 +54,9 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL  LOG_LEVEL_APP
 
-#define SERVER_NUM 3
 char* server_uris[SERVER_NUM] = {"coap://[fd00::212:4b00:14b5:d967]", "coap://[fd00::212:4b00:14b5:ee10]","coap://[fd00::212:4b00:14b5:de92]" };
 
-#define TOGGLE_INTERVAL 10
+uint8_t payload_lengths[PAYLOAD_NUM] = {1, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128};
 
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
@@ -80,12 +79,15 @@ client_chunk_handler(coap_message_t *response)
 
   printf("--------------------->|%.*s\n", len, (char *)chunk);
 }
+
 PROCESS_THREAD(er_example_client, ev, data)
 {
-  static coap_endpoint_t server_eps[SERVER_NUM];
-  static int j = 0;
-  static coap_message_t request[3];      /* This way the packet can be treated as pointer as usual. */
   static uint8_t token[2] = {0xAA, 0x00};
+  static coap_endpoint_t server_eps[SERVER_NUM];
+  static coap_message_t request[SERVER_NUM];      /* This way the packet can be treated as pointer as usual. */
+  static int j = 0;
+  static int p = 0;
+  static int iter = 0;
   static oscore_ctx_t *contexts[SERVER_NUM];
   
   PROCESS_BEGIN();
@@ -118,25 +120,28 @@ PROCESS_THREAD(er_example_client, ev, data)
     PROCESS_YIELD();
 
     if(etimer_expired(&et)) {
-      printf("--Toggle timer--\n");
 
       for( j = 0; j < SERVER_NUM; j++){
+        uint8_t payload_len = payload_lengths[p];
         coap_init_message(&request[j], COAP_TYPE_CON, COAP_POST, 0);
-        char payload[10];
-        memset(payload, 'a', 10);
+        char dummy_payload[128];
+        memset(dummy_payload, 'a', payload_len);
         coap_set_header_uri_path(&request[j], url);
         coap_set_token(&request[j], token, 2);
-        coap_set_payload(&request[j], payload, 10);
-        LOG_INFO_COAP_EP(&server_eps[j]);
-        LOG_INFO_("\n");
+        coap_set_payload(&request[j], dummy_payload, payload_len);
         COAP_BLOCKING_REQUEST(&server_eps[j], &request[j], client_chunk_handler);
         token[1]++;
       }
-      printf("--Done--\n");
+      
+      iter++;
+      if( iter >= ITERATIONS){ /* If we have done the desired number of iterations we increase the payload length. */
+        p++;
+      }
 
       etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
+    } else if(etimer_expired(&et) && p >= PAYLOAD_NUM) {
+      printf("Tests over!\n");
     }
   }
-
   PROCESS_END();
 }
