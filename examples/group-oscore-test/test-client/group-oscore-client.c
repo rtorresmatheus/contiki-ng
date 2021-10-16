@@ -46,6 +46,7 @@
 #include "oscore.h"
 #include "../client-keys.h"
 #include "../client-conf.h"
+#include "dev/leds.h"
 
 /* Log configuration */
 #include "coap-log.h"
@@ -147,6 +148,7 @@ PROCESS_THREAD(er_example_client, ev, data)
       etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     } else if(etimer_expired(&et) && p >= PAYLOAD_NUM) {
         printf("Tests over!\n");
+        leds_on(LEDS_GREEN);
     }
   }
 
