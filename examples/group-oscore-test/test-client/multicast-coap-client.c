@@ -69,15 +69,15 @@ char *url = "mc/post";
 void
 client_chunk_handler(coap_message_t *response)
 {
-  const uint8_t *chunk;
+//  const uint8_t *chunk;
   if(response == NULL) {
     puts("Request timed out");
     return;
   }
 
-  int len = coap_get_payload(response, &chunk);
+  //int len = coap_get_payload(response, &chunk);
 
-  printf("|%.*s\n", len, (char *)chunk);
+ // printf("|%.*s\n", len, (char *)chunk);
 }
 
 PROCESS_THREAD(er_example_client, ev, data)
@@ -93,7 +93,7 @@ PROCESS_THREAD(er_example_client, ev, data)
 
   coap_endpoint_parse(MULTICAST_EP, strlen(MULTICAST_EP), &server_ep);
 
-  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND * 3);
+  etimer_set(&et, CLOCK_SECOND * 60);
 
   while(1) {
     PROCESS_YIELD();
@@ -114,6 +114,7 @@ PROCESS_THREAD(er_example_client, ev, data)
       iter++;
       if( iter >= ITERATIONS){ /* If we have done the desired number of iterations we increase the payload length. */
         p++;
+        iter = 0;
       }
 
       etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);

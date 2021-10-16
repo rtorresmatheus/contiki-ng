@@ -13,8 +13,33 @@ CONTIKI=../../..
 #MAKE_WITH_OSCORE = 1
 #MAKE_WITH_GROUPCOM = 1
 #MAKE_WITH_HW_CRYPTO = 0
-
 #MAKE_WITH_ES256 = 0
+
+#Determine what if OSCORE is used
+ifeq ($(strip $(OSCORE)),1)
+MAKE_WITH_OSCORE = 0
+endif
+
+#Determine what ECDSA algorithm to use, ECDSA P-256 by default
+ifeq ($(strip $(GROUPCOM)),1)
+MAKE_WITH_GROUPCOM = 1
+endif
+
+#Determine what ECDSA algorithm to use, ECDSA P-256 by default
+ifeq ($(strip $(ED25519)),1)
+MAKE_WITH_ES256 = 0
+else
+MAKE_WITH_ES256 = 1
+endif
+
+#Determine usage of HW/SW cryptography, SW by default 
+ifeq ($(strip $(HW)),1)
+MAKE_WITH_HW_CRYPTO = 1
+else
+MAKE_WITH_HW_CRYPTO = 0
+endif
+
+
 
 # Include the CoAP implementation
 include $(CONTIKI)/Makefile.dir-variables

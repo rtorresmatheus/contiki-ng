@@ -68,16 +68,16 @@ char *url = "uc/post";
 void
 client_chunk_handler(coap_message_t *response)
 {
-  const uint8_t *chunk;
+//  const uint8_t *chunk;
 
   if(response == NULL) {
     puts("Request timed out");
     return;
   }
 
-  int len = coap_get_payload(response, &chunk);
+  //int len = coap_get_payload(response, &chunk);
 
-  printf("--------------------->|%.*s\n", len, (char *)chunk);
+  //printf("|%.*s\n", len, (char *)chunk);
 }
 
 PROCESS_THREAD(er_example_client, ev, data)
@@ -114,7 +114,7 @@ PROCESS_THREAD(er_example_client, ev, data)
     coap_endpoint_parse(server_uris[i], strlen(server_uris[i]), &server_eps[i]);
     oscore_ep_ctx_set_association(&server_eps[i], url, contexts[i]);
   }
-  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND * 3);
+  etimer_set(&et, CLOCK_SECOND * 60);
 
   while(1) {
     PROCESS_YIELD();

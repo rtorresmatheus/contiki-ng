@@ -3,7 +3,7 @@
 
 
 /* For tests */ 
-#define ITERATIONS      1
+#define ITERATIONS    10
 #define SERVER_NUM      3
 #define PAYLOAD_NUM    17
 
@@ -13,5 +13,7 @@
 
 #define MSGS_TO_VERIFY_SIZE 3
 #define MSGS_TO_SIGN_SIZE 3
+
+#define TOGGLE_INTERVAL 1
 
 #endif /* GROUP_OSCORE_TEST_CLIENT_CONF_H_ */

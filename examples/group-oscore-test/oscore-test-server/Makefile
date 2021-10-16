@@ -8,7 +8,6 @@ PLATFORMS_EXCLUDE = sky z1
 MODULES += os/net/app-layer/coap
 
 MAKE_WITH_OSCORE = 1
-#MAKE_WITH_HW_CRYPTO = 1
 
 #Determine what tetst to build, 4 (RTT) by default
 ifeq ($(strip $(TEST)),)
@@ -22,6 +21,13 @@ ifeq ($(strip $(SERVER)),)
 CFLAGS += -DSERVER=1
 else
 CFLAGS += -DSERVER=$(SERVER)
+endif
+
+#Determine usage of HW/SW cryptography, SW by default 
+ifeq ($(strip $(HW)),1)
+MAKE_WITH_HW_CRYPTO = 1
+else
+MAKE_WITH_HW_CRYPTO = 0
 endif
 
 # Include CoAP resources
