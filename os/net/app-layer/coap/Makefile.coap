@@ -9,6 +9,16 @@ ifeq ($(strip $(MAKE_WITH_OSCORE)),1)
  
  CFLAGS += -DWITH_OSCORE=1
  MODULES += os/net/app-layer/coap/oscore-support
+ 
+ #We need tinydtls for the SHA-256 implementation.
+ TINYDTLS_PATH := os/net/security/tinydtls
+ ifeq (${wildcard $(CONTIKI)/$(TINYDTLS_PATH)/Makefile},)
+  ${error Could not find the tinyDTLS submodule. Please run "git submodule update --init" and try again}
+ endif
+  
+  #Comment out #include "tinydtls.h" from tinydtls/sha2/sha2.h because OSCORE does not build with it. This is a hack and should probably be done in a better way. "\\\#" escape the pound sign for Make.
+  SHA2_PATH := $(CONTIKI)/$(TINYDTLS_PATH)/sha2/sha2.c
+  SED_RES:= $(shell sed -i 's/\\\#include \"tinydtls.h\"/\/\/include tinydtls.h/g' $(SHA2_PATH)  )
 
   #HW/SW Crypto configurations for Simpleink 
   ifeq ($(TARGET), simplelink)
