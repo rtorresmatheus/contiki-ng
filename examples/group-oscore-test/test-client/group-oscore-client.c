@@ -118,7 +118,7 @@ PROCESS_THREAD(er_example_client, ev, data)
   oscore_ep_ctx_set_association(&server_ep, url, contexts[0]);
   coap_endpoint_parse(MULTICAST_EP, strlen(MULTICAST_EP), &server_ep);
 
-  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND * 3);
+  etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND * 5);
 
   while(1) {
     PROCESS_YIELD();

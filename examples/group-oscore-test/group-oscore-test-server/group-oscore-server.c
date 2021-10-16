@@ -77,7 +77,7 @@ PROCESS_THREAD(er_example_server, ev, data)
         LOG_ERR("Could not create OSCORE Security Context!\n");
   }
 
-  oscore_add_group_keys(context, server_public_key, server_private_key, client_public_key, COSE_Algorithm_ES256, COSE_Elliptic_Curve_P256);  
+  oscore_add_group_keys(context, server_public_key, server_private_key, client_public_key, COSE_Algorithm_ECC, COSE_Elliptic_Curve);  
   coap_activate_resource(&res_post, "mc/post");
   oscore_protect_resource(&res_post);
   /* Define application-specific events here. */
