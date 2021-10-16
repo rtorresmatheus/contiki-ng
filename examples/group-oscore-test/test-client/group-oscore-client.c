@@ -45,6 +45,7 @@
 #include "coap-blocking-api.h"
 #include "oscore.h"
 #include "../client-keys.h"
+#include "../client-conf.h"
 
 /* Log configuration */
 #include "coap-log.h"

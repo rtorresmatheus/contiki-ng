@@ -47,19 +47,12 @@
 #define CSMA_CONF_ACK_WAIT_TIME RTIMER_SECOND * 5
 #define COAP_CONF_MULTICAST_RESPONSE_DELAY 5
 #define COAP_CONF_MULTICAST_REQUEST_TIMEOUT_INTERVAL 15000
-#define CONTEXT_NUM 5
-#define TOKEN_SEQ_NUM 5
-#define EP_CTX_NUM 5
 
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
 #define RF_CONF_MODE RF_MODE_2_4_GHZ
 #define ROLL_TM_CONF_IMIN_1         64
 
 #define REST_MAX_CHUNK_SIZE 250
-
-/* Move to client conf */
-#define MSGS_TO_VERIFY_SIZE 3
-#define MSGS_TO_SIGN_SIZE 3
 
 /* Enable more RAM on CC2538 and increase Stack size. */
 #define LPM_CONF_MAX_PM 1

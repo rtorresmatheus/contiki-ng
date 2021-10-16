@@ -43,6 +43,7 @@
 #include "contiki-net.h"
 #include "coap-engine.h"
 #include "coap-blocking-api.h"
+#include "../client-conf.h"
 
 /* Log configuration */
 #include "coap-log.h"

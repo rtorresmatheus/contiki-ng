@@ -445,7 +445,6 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
 
   /* 2 Compose the AAD and the plaintext, as described in Sections 5.3 and 5.4.*/
   uint8_t plaintext_len = oscore_serializer(coap_pkt, content_buffer, ROLE_CONFIDENTIAL);
-  printf("plaintext_len %d\n", plaintext_len);
   if( plaintext_len > COAP_MAX_CHUNK_SIZE){
     LOG_DBG_("OSCORE Message to large to process.\n");
     return PACKET_SERIALIZATION_ERROR;
@@ -460,7 +459,6 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   cose_encrypt0_set_nonce(cose, nonce_buffer, COSE_algorithm_AES_CCM_16_64_128_IV_LEN);
 
   if(coap_is_request(coap_pkt)){
-    printf("store exchange seq %llu\n", ctx->sender_context->seq);
     if(!oscore_set_exchange(coap_pkt->token, coap_pkt->token_len, ctx->sender_context->seq, ctx)){
       LOG_DBG("OSCORE Could not store exchange.\n");
       return PACKET_SERIALIZATION_ERROR;
@@ -471,7 +469,6 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   /*Groupcomm 4.2: The payload of the OSCORE messages SHALL encode the ciphertext of the COSE object
    * concatenated with the value of the CounterSignature0 of the COSE object as in Appendix A.2 of RFC8152
    * according to the Counter Signature Algorithm and Counter Signature Parameters in the Security Context.*/
-  printf("cose encrypte len %d\n", cose->content_len);
   int ciphertext_len = cose_encrypt0_encrypt(cose);
   if( ciphertext_len < 0){
     LOG_DBG("OSCORE internal error %d.\n", ciphertext_len);
