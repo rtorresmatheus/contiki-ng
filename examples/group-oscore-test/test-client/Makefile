@@ -17,7 +17,7 @@ CONTIKI=../../..
 
 #Determine what if OSCORE is used
 ifeq ($(strip $(OSCORE)),1)
-MAKE_WITH_OSCORE = 0
+MAKE_WITH_OSCORE = 1
 endif
 
 #Determine what ECDSA algorithm to use, ECDSA P-256 by default

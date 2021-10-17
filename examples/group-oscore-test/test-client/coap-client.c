@@ -53,28 +53,34 @@
 
 char* server_uris[SERVER_NUM] = {"coap://[fd00::212:4b00:14b5:d967]", "coap://[fd00::212:4b00:14b5:ee10]","coap://[fd00::212:4b00:14b5:de92]" }; 
 
-uint8_t payload_lengths[PAYLOAD_NUM] = {1, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128};
-
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
 
 static struct etimer et;
 char *url = "uc/post";
 
+static uint8_t payload_lengths[PAYLOAD_NUM] = {1, 32, 64, 128};
+static unsigned long send_time_s;
+static unsigned long first_response_time_s;
+static unsigned long last_response_time_s;
+static uint8_t num_msg;
+
 /* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
 void
 client_chunk_handler(coap_message_t *response)
 {
-//  const uint8_t *chunk;
-
   if(response == NULL) {
-    puts("Request timed out");
+    printf("f:%lu,l:%lu,m:%d\n", (first_response_time_s - send_time_s), (last_response_time_s - send_time_s), num_msg);
     return;
+  } else {
+    num_msg++;
   }
 
-  //int len = coap_get_payload(response, &chunk);
+  if (first_response_time_s == 0){
+    first_response_time_s = RTIMER_NOW();
+  }
 
-  //printf("|%.*s\n", len, (char *)chunk);
+  last_response_time_s = RTIMER_NOW();
 }
 
 
@@ -95,10 +101,14 @@ PROCESS_THREAD(er_example_client, ev, data)
   }
   
   etimer_set(&et, CLOCK_SECOND * 60);
-
+  printf("S\n");
   while(1) {
     PROCESS_YIELD();
     if(etimer_expired(&et) && p < PAYLOAD_NUM) {
+      send_time_s = RTIMER_NOW();
+      num_msg = 0;
+      first_response_time_s = 0;
+      last_response_time_s = 0;
    
       for( j = 0; j < SERVER_NUM; j++){
         coap_init_message(&request[j], COAP_TYPE_CON, COAP_POST, 0); 
@@ -117,13 +127,15 @@ PROCESS_THREAD(er_example_client, ev, data)
       iter++;
       if( iter >= ITERATIONS){ /* If we have done the desired number of iterations we increase the payload length. */
         p++;
+        printf("%d\n"p);
         iter = 0;
       }
 
       etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     } else if(etimer_expired(&et) && p >= PAYLOAD_NUM) {
-        printf("Tests over!\n");
+        printf("E\n");
         leds_on(LEDS_GREEN);
+        etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     }
   } 
   

@@ -21,7 +21,7 @@
 #define STACK_CHECK_CONF_ENABLED 0 
 
 //FOR ZOUL, send prints over GPIO-UART instead of over the USB interface
-//#define DBG_CONF_UART 1
+#define DBG_CONF_UART 1
 
 #else
 #endif /* TEST */
@@ -44,9 +44,9 @@
 */
 
 
-#define CSMA_CONF_ACK_WAIT_TIME RTIMER_SECOND * 5
+#define CSMA_CONF_ACK_WAIT_TIME RTIMER_SECOND * 10
 #define COAP_CONF_MULTICAST_RESPONSE_DELAY 5
-#define COAP_CONF_MULTICAST_REQUEST_TIMEOUT_INTERVAL 15000
+#define COAP_CONF_MULTICAST_REQUEST_TIMEOUT_INTERVAL 10000
 
 /* For Imin: Use 16 over CSMA, 64 over Contiki MAC */
 #define RF_CONF_MODE RF_MODE_2_4_GHZ

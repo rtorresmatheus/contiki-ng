@@ -60,29 +60,37 @@
 #error "Check the values of: NETSTACK_CONF_WITH_IPV6, UIP_CONF_IPV6_RPL"
 #endif
 
-uint8_t payload_lengths[PAYLOAD_NUM] = {1, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128};
-
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
 
 static struct etimer et;
 char *url = "mc/post";
 
+static uint8_t payload_lengths[PAYLOAD_NUM] = {1, 32, 64, 128};
+static unsigned long send_time_s;
+static unsigned long first_response_time_s;
+static unsigned long last_response_time_s;
+static uint8_t num_msg;
+
 /* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
 void
 client_chunk_handler(coap_message_t *response)
 {
-//  const uint8_t *chunk;
-  
   if(response == NULL) {
-    puts("Request timed out");
+    printf("f:%lu,l:%lu,m:%d\n", (first_response_time_s - send_time_s), (last_response_time_s - send_time_s), num_msg);
     return;
+  } else {
+    num_msg++;
   }
 
-  //int len = coap_get_payload(response, &chunk);
+  if (first_response_time_s == 0){
+    first_response_time_s = RTIMER_NOW();
+  }
 
- // printf("|%.*s\n", len, (char *)chunk);
+  last_response_time_s = RTIMER_NOW();
 }
+
+
 PROCESS_THREAD(er_example_client, ev, data)
 {
   PROCESS_BEGIN();
@@ -127,6 +135,11 @@ PROCESS_THREAD(er_example_client, ev, data)
     PROCESS_YIELD();
 
     if(etimer_expired(&et)) {
+      send_time_s = RTIMER_NOW();
+      num_msg = 0;
+      first_response_time_s = 0;
+      last_response_time_s = 0;
+
       uint8_t payload_len = payload_lengths[p];
       coap_init_message(request, COAP_TYPE_NON, COAP_POST, 0);
       char dummy_payload[128];
@@ -149,6 +162,7 @@ PROCESS_THREAD(er_example_client, ev, data)
     } else if(etimer_expired(&et) && p >= PAYLOAD_NUM) {
         printf("Tests over!\n");
         leds_on(LEDS_GREEN);
+        etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     }
   }
 

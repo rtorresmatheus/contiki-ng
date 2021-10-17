@@ -43,7 +43,6 @@
 #include "contiki-net.h"
 #include "coap-engine.h"
 #include "coap-blocking-api.h"
-#include "../client-conf.h"
 #include "dev/leds.h"
 
 /* Log configuration */
@@ -58,27 +57,34 @@
 #error "Check the values of: NETSTACK_CONF_WITH_IPV6, UIP_CONF_IPV6_RPL"
 #endif
 
-uint8_t payload_lengths[PAYLOAD_NUM] = {1, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128};
+unsigned char payload_lengths[PAYLOAD_NUM] = {1, 32, 64, 128};
 
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
 
 static struct etimer et;
 char *url = "mc/post";
+static unsigned long send_time_s;
+static unsigned long first_response_time_s;
+static unsigned long last_response_time_s;
+static uint8_t num_msg;
 
 /* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
 void
 client_chunk_handler(coap_message_t *response)
 {
-//  const uint8_t *chunk;
   if(response == NULL) {
-    puts("Request timed out");
+    printf("f:%lu,l:%lu,m:%d\n", (first_response_time_s - send_time_s), (last_response_time_s - send_time_s), num_msg);
     return;
+  } else {
+    num_msg++;
   }
 
-  //int len = coap_get_payload(response, &chunk);
-
- // printf("|%.*s\n", len, (char *)chunk);
+  if (first_response_time_s == 0){
+    first_response_time_s = RTIMER_NOW();
+  }
+  
+  last_response_time_s = RTIMER_NOW();
 }
 
 PROCESS_THREAD(er_example_client, ev, data)
@@ -88,18 +94,21 @@ PROCESS_THREAD(er_example_client, ev, data)
   static coap_endpoint_t server_ep;
   static coap_message_t request[1];      /* This way the packet can be treated as pointer as usual. */
   static uint8_t token[2] = {0xAA, 0x00};
-  static int j = 0;
   static int p = 0;
   static int iter = 0;
 
   coap_endpoint_parse(MULTICAST_EP, strlen(MULTICAST_EP), &server_ep);
 
   etimer_set(&et, CLOCK_SECOND * 60);
-
+  printf("S\n");
   while(1) {
     PROCESS_YIELD();
 
-    if(etimer_expired(&et)) {
+    if(etimer_expired(&et) && p < PAYLOAD_NUM) {
+      send_time_s = RTIMER_NOW();
+      num_msg = 0;
+      first_response_time_s = 0;
+      last_response_time_s = 0;
       uint8_t payload_len = payload_lengths[p];
       coap_init_message(request, COAP_TYPE_NON, COAP_POST, 0); 
       char dummy_payload[128];
@@ -110,18 +119,19 @@ PROCESS_THREAD(er_example_client, ev, data)
 
       COAP_MULTICAST_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
       token[1]++;
-      printf("--Done--\n");
 
       iter++;
       if( iter >= ITERATIONS){ /* If we have done the desired number of iterations we increase the payload length. */
         p++;
+        printf("%d\n", p);
         iter = 0;
       }
 
       etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     } else if(etimer_expired(&et) && p >= PAYLOAD_NUM) {
-        printf("Tests over!\n");
+        printf("E\n");
         leds_on(LEDS_GREEN);
+        etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     }
   }
 

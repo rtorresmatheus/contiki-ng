@@ -4,9 +4,10 @@
 
 /* For tests */ 
 #define ITERATIONS    10
-#define SERVER_NUM      3
-#define PAYLOAD_NUM    17
+#define SERVER_NUM     3
+#define PAYLOAD_NUM    4
 
+#define COAP_MAX_ATTEMPTS 1
 #define CONTEXT_NUM 5
 #define TOKEN_SEQ_NUM 5
 #define EP_CTX_NUM 5
