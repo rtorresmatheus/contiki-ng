@@ -74,7 +74,6 @@ void
 client_chunk_handler(coap_message_t *response)
 {
   if(response == NULL) {
-    printf("f:%lu,l:%lu,m:%d\n", (first_response_time_s - send_time_s), (last_response_time_s - send_time_s), num_msg);
     return;
   } else {
     num_msg++;
@@ -123,11 +122,11 @@ PROCESS_THREAD(er_example_client, ev, data)
     oscore_ep_ctx_set_association(&server_eps[i], url, contexts[i]);
   }
   etimer_set(&et, CLOCK_SECOND * 60);
-
+  printf("S\n");
   while(1) {
     PROCESS_YIELD();
 
-    if(etimer_expired(&et)) {
+    if(etimer_expired(&et) && p < PAYLOAD_NUM) {
       send_time_s = RTIMER_NOW();
       num_msg = 0;
       first_response_time_s = 0;
@@ -144,15 +143,18 @@ PROCESS_THREAD(er_example_client, ev, data)
         COAP_BLOCKING_REQUEST(&server_eps[j], &request[j], client_chunk_handler);
         token[1]++;
       }
+      printf("f:%lu,l:%lu,m:%d\n", (first_response_time_s - send_time_s), (last_response_time_s - send_time_s), num_msg);
       
       iter++;
       if( iter >= ITERATIONS){ /* If we have done the desired number of iterations we increase the payload length. */
         p++;
+        printf("%d\n", p);
+        iter = 0;
       }
 
       etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     } else if(etimer_expired(&et) && p >= PAYLOAD_NUM) {
-      printf("Tests over!\n");
+      printf("E\n");
       leds_on(LEDS_GREEN);
       etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
     }

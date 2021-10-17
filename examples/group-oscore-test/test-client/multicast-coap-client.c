@@ -57,13 +57,14 @@
 #error "Check the values of: NETSTACK_CONF_WITH_IPV6, UIP_CONF_IPV6_RPL"
 #endif
 
-unsigned char payload_lengths[PAYLOAD_NUM] = {1, 32, 64, 128};
 
 PROCESS(er_example_client, "Erbium Example Client");
 AUTOSTART_PROCESSES(&er_example_client);
 
 static struct etimer et;
 char *url = "mc/post";
+
+static uint8_t payload_lengths[PAYLOAD_NUM] = {1, 32, 64, 128};
 static unsigned long send_time_s;
 static unsigned long first_response_time_s;
 static unsigned long last_response_time_s;
@@ -74,7 +75,6 @@ void
 client_chunk_handler(coap_message_t *response)
 {
   if(response == NULL) {
-    printf("f:%lu,l:%lu,m:%d\n", (first_response_time_s - send_time_s), (last_response_time_s - send_time_s), num_msg);
     return;
   } else {
     num_msg++;
@@ -119,6 +119,7 @@ PROCESS_THREAD(er_example_client, ev, data)
 
       COAP_MULTICAST_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
       token[1]++;
+      printf("f:%lu,l:%lu,m:%d\n", (first_response_time_s - send_time_s), (last_response_time_s - send_time_s), num_msg);
 
       iter++;
       if( iter >= ITERATIONS){ /* If we have done the desired number of iterations we increase the payload length. */
