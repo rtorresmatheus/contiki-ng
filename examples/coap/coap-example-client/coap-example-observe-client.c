@@ -54,17 +54,15 @@
 #define LOG_LEVEL LOG_LEVEL_APP
 
 /*----------------------------------------------------------------------------*/
-/* FIXME: This server address is hard-coded for Cooja */
-#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0x0212, \
-                                          0x7402, 0x0002, 0x0202)
-#define REMOTE_PORT     UIP_HTONS(COAP_DEFAULT_PORT)
+/* TODO: Change with your server adress */
+#define SERVER_EP "coap://[fe80::212:4b00:1ca7:7ab9]"
 /* Toggle interval in seconds */
-#define TOGGLE_INTERVAL 30
+#define TOGGLE_INTERVAL 180
 /* The path of the resource to observe */
 #define OBS_RESOURCE_URI "test/push"
 
 /*----------------------------------------------------------------------------*/
-static uip_ipaddr_t server_ipaddr[1]; /* holds the server ip address */
+static coap_endpoint_t server_endpoint; /* holds the server ip address */
 static coap_observee_t *obs;
 
 /*----------------------------------------------------------------------------*/
@@ -123,7 +121,7 @@ toggle_observation(void)
     obs = NULL;
   } else {
     printf("Starting observation\n");
-    obs = coap_obs_request_registration(server_ipaddr, REMOTE_PORT,
+    obs = coap_obs_request_registration(&server_endpoint,
                                         OBS_RESOURCE_URI, notification_callback, NULL);
   }
 }
@@ -139,8 +137,9 @@ PROCESS_THREAD(er_example_observe_client, ev, data)
 
   static struct etimer et;
 
-  /* store server address in server_ipaddr */
-  SERVER_NODE(server_ipaddr);
+  /* parse server address in server_endpoint */
+  coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
+
   /* init timer and button (if available) */
   etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
 #if PLATFORM_HAS_BUTTON
@@ -155,16 +154,16 @@ PROCESS_THREAD(er_example_observe_client, ev, data)
     PROCESS_YIELD();
     if(etimer_expired(&et)) {
       printf("--Toggle timer--\n");
-      toggle_observation();
+      // toggle_observation();
       printf("\n--Done--\n");
       etimer_reset(&et);
 #if PLATFORM_HAS_BUTTON
 #if PLATFORM_SUPPORTS_BUTTON_HAL
-    } else if(ev == button_hal_release_event) {
+    } if(ev == button_hal_release_event) {
 #else
     } else if(ev == sensors_event && data == &button_sensor) {
 #endif
-      printf("--Toggle tutton--\n");
+      printf("--Toggle Button--\n");
       toggle_observation();
       printf("\n--Done--\n");
 #endif /* PLATFORM_HAS_BUTTON */

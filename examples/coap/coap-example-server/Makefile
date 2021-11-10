@@ -6,6 +6,7 @@ PLATFORMS_EXCLUDE = sky z1
 
 # Include CoAP resources
 MODULES_REL += ./resources
+MODULES += os/services/shell
 
 CONTIKI=../../..
 

@@ -1,9 +1,11 @@
-CONTIKI_PROJECT = coap-example-client
+CONTIKI_PROJECT = coap-example-observe-client
 # coap-example-observe-client is outdated but will be ported at a later point
 all: $(CONTIKI_PROJECT)
 
 # Do not try to build on Sky because of code size limitation
 PLATFORMS_EXCLUDE = sky z1
+
+MODULES += os/services/shell
 
 CONTIKI=../../..
 

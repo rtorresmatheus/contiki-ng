@@ -52,34 +52,13 @@
 #include "sys/log.h"
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
+
 /*
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
-extern coap_resource_t
-  res_hello,
-  res_mirror,
-  res_chunks,
-  res_separate,
-  res_push,
-  res_event,
-  res_sub,
-  res_b1_sep_b2;
-#if PLATFORM_HAS_LEDS
-extern coap_resource_t res_leds, res_toggle;
-#endif
-#if PLATFORM_HAS_LIGHT
-#include "dev/light-sensor.h"
-extern coap_resource_t res_light;
-#endif
-#if PLATFORM_HAS_BATTERY
-#include "dev/battery-sensor.h"
-extern coap_resource_t res_battery;
-#endif
-#if PLATFORM_HAS_TEMPERATURE
-#include "dev/temperature-sensor.h"
-extern coap_resource_t res_temperature;
-#endif
+extern coap_resource_t res_push;
+
 
 PROCESS(er_example_server, "Erbium Example Server");
 AUTOSTART_PROCESSES(&er_example_server);
@@ -87,7 +66,6 @@ AUTOSTART_PROCESSES(&er_example_server);
 PROCESS_THREAD(er_example_server, ev, data)
 {
   PROCESS_BEGIN();
-
   PROCESS_PAUSE();
 
   LOG_INFO("Starting Erbium Example Server\n");
@@ -97,32 +75,14 @@ PROCESS_THREAD(er_example_server, ev, data)
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
-  coap_activate_resource(&res_hello, "test/hello");
-  coap_activate_resource(&res_mirror, "debug/mirror");
-  coap_activate_resource(&res_chunks, "test/chunks");
-  coap_activate_resource(&res_separate, "test/separate");
   coap_activate_resource(&res_push, "test/push");
+
 #if PLATFORM_HAS_BUTTON
-  coap_activate_resource(&res_event, "sensors/button");
+#if !PLATFORM_SUPPORTS_BUTTON_HAL
+  SENSORS_ACTIVATE(button_sensor);
+#endif
+  printf("Press a button to send message to registered observer device \n");
 #endif /* PLATFORM_HAS_BUTTON */
-  coap_activate_resource(&res_sub, "test/sub");
-  coap_activate_resource(&res_b1_sep_b2, "test/b1sepb2");
-#if PLATFORM_HAS_LEDS
-/*  coap_activate_resource(&res_leds, "actuators/leds"); */
-  coap_activate_resource(&res_toggle, "actuators/toggle");
-#endif
-#if PLATFORM_HAS_LIGHT
-  coap_activate_resource(&res_light, "sensors/light");
-  SENSORS_ACTIVATE(light_sensor);
-#endif
-#if PLATFORM_HAS_BATTERY
-  coap_activate_resource(&res_battery, "sensors/battery");
-  SENSORS_ACTIVATE(battery_sensor);
-#endif
-#if PLATFORM_HAS_TEMPERATURE
-  coap_activate_resource(&res_temperature, "sensors/temperature");
-  SENSORS_ACTIVATE(temperature_sensor);
-#endif
 
   /* Define application-specific events here. */
   while(1) {
@@ -136,10 +96,8 @@ PROCESS_THREAD(er_example_server, ev, data)
       LOG_DBG("*******BUTTON*******\n");
 
       /* Call the event_handler for this application-specific event. */
-      res_event.trigger();
+      res_push.trigger();
 
-      /* Also call the separate response example handler. */
-      res_separate.resume();
     }
 #endif /* PLATFORM_HAS_BUTTON */
   }                             /* while (1) */
