@@ -42,6 +42,7 @@
 #include "contiki.h"
 #include "contiki-net.h"
 #include "coap-engine.h"
+#include "sys/energest.h"
 #if PLATFORM_SUPPORTS_BUTTON_HAL
 #include "dev/button-hal.h"
 #else
@@ -64,10 +65,16 @@
 /*----------------------------------------------------------------------------*/
 static coap_endpoint_t server_endpoint; /* holds the server ip address */
 static coap_observee_t *obs;
-
+static int32_t event_counter = 0;
 /*----------------------------------------------------------------------------*/
 PROCESS(er_example_observe_client, "Erbium Coap Observe Client Example");
 AUTOSTART_PROCESSES(&er_example_observe_client);
+
+static unsigned long
+to_seconds(uint64_t time)
+{
+  return (unsigned long)(time / ENERGEST_SECOND);
+}
 
 /*----------------------------------------------------------------------------*/
 /*
@@ -88,6 +95,30 @@ notification_callback(coap_observee_t *obs, void *notification,
   switch(flag) {
   case NOTIFICATION_OK:
     printf("NOTIFICATION OK: %*s\n", len, (char *)payload);
+    if(event_counter >= 60)
+    {
+      printf("Stopping observation\n");
+      coap_obs_remove_observee(obs);
+      obs = NULL;
+    }
+    else{
+              /* Update all energest times. */
+      energest_flush();
+
+      printf("\nEnergest CLIENTE:\n");
+      printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
+            to_seconds(energest_type_time(ENERGEST_TYPE_CPU)),
+            to_seconds(energest_type_time(ENERGEST_TYPE_LPM)),
+            to_seconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+            to_seconds(ENERGEST_GET_TOTAL_TIME()));
+      printf(" Radio LISTEN %4lus TRANSMIT %4lus OFF      %4lus\n",
+            to_seconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+            to_seconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+            to_seconds(ENERGEST_GET_TOTAL_TIME()
+                        - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                        - energest_type_time(ENERGEST_TYPE_LISTEN)));
+      ++event_counter;
+    }
     break;
   case OBSERVE_OK: /* server accepeted observation request */
     printf("OBSERVE_OK: %*s\n", len, (char *)payload);

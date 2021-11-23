@@ -6,6 +6,7 @@ all: $(CONTIKI_PROJECT)
 PLATFORMS_EXCLUDE = sky z1
 
 MODULES += os/services/shell
+MODULES += os/services/simple-energest
 
 CONTIKI=../../..
 
