@@ -42,5 +42,9 @@
 #define LOG_LEVEL_APP LOG_LEVEL_DBG
 #define LOG_CONF_LEVEL_COAP LOG_LEVEL_INFO
 
+#define COAP_OBSERVE_CLIENT            1
+
+#define RF_CONF_MODE RF_MODE_SUB_1_GHZ
+
 #endif /* PROJECT_CONF_H_ */
 

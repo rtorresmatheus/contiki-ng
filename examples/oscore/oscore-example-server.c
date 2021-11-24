@@ -89,7 +89,7 @@ extern coap_resource_t res_temperature;
 /* Key material, sender-ID and receiver-ID used for deriving an OSCORE-Security-Context. Note that Sender-ID and Receiver-ID is
  * mirrored in the Client and Server. */
 uint8_t master_secret[35] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23};
-uint8_t salt[8] = {0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40}; 
+uint8_t salt[8] = {0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40};
 uint8_t sender_id[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
 uint8_t receiver_id[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
 #endif /* WITH_OSCORE */
@@ -140,40 +140,11 @@ PROCESS_THREAD(er_example_server, ev, data)
    * WARNING: Activating twice only means alternate path, not two instances!
    * All static variables are the same for each URI path.
    */
-  coap_activate_resource(&res_hello, "test/hello");
-  coap_activate_resource(&res_mirror, "debug/mirror");
-  coap_activate_resource(&res_chunks, "test/chunks");
-  coap_activate_resource(&res_separate, "test/separate");
   coap_activate_resource(&res_push, "test/push");
-#if PLATFORM_HAS_BUTTON
-  coap_activate_resource(&res_event, "sensors/button");
-#endif /* PLATFORM_HAS_BUTTON */
-  coap_activate_resource(&res_sub, "test/sub");
-  coap_activate_resource(&res_b1_sep_b2, "test/b1sepb2");
-#if PLATFORM_HAS_LEDS
-/*  coap_activate_resource(&res_leds, "actuators/leds"); */
-  coap_activate_resource(&res_toggle, "actuators/toggle");
-#endif
-#if PLATFORM_HAS_LIGHT
-  coap_activate_resource(&res_light, "sensors/light");
-  SENSORS_ACTIVATE(light_sensor);
-#endif
-#if PLATFORM_HAS_BATTERY
-  coap_activate_resource(&res_battery, "sensors/battery");
-  SENSORS_ACTIVATE(battery_sensor);
-#endif
-#if PLATFORM_HAS_TEMPERATURE
-  coap_activate_resource(&res_temperature, "sensors/temperature");
-  SENSORS_ACTIVATE(temperature_sensor);
-#endif
 
   #ifdef WITH_OSCORE
   /*Marks a resource as protected by OSCORE. A CoAP request arriving to the resource will not be processed and return a UNAUTHORIZED_4_01
    * response. Only the specified resources "test/hello", "debug/mirror", "test/chunks", "test/separate" and "test/push" are protected in this example.*/
-  oscore_protect_resource(&res_hello);
-  oscore_protect_resource(&res_mirror);
-  oscore_protect_resource(&res_chunks);
-  oscore_protect_resource(&res_separate);
   oscore_protect_resource(&res_push);
   #endif /* WITH_OSCORE */
     /* Define application-specific events here. */
@@ -187,11 +158,7 @@ PROCESS_THREAD(er_example_server, ev, data)
 #endif
       LOG_DBG("*******BUTTON*******\n");
 
-      /* Call the event_handler for this application-specific event. */
-      res_event.trigger();
-
-      /* Also call the separate response example handler. */
-      res_separate.resume();
+      res_push.trigger();
     }
 #endif /* PLATFORM_HAS_BUTTON */
   }                             /* while (1) */

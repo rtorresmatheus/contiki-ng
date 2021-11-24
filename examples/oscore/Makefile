@@ -1,11 +1,12 @@
-all: oscore-example-server oscore-example-client oscore-plugtest-server oscore-plugtest-client
+CONTIKI_PROJECT = oscore-example-observe-client oscore-example-server
+all: $(CONTIKI_PROJECT)
 # use target "oscore-plugtest-server" explicitly when required
 
 CONTIKI=../..
 
 MAKE_WITH_OSCORE = 1
 WERROR = 1
-CFLAGS += -DCOOJA_MTARCH_STACKSIZE=4096
+MODULES += os/services/shell
 #CFLAGS += -Wvla
 
 # build RESTful resources
@@ -20,7 +21,7 @@ CONTIKI_TARGET_SOURCEFILES += plugtest_resources.c
 
 # Include the CoAP implementation
 MODULES += os/net/app-layer/coap
-
+include $(CONTIKI)/Makefile.dir-variables
 include $(CONTIKI)/Makefile.include
 
 # border router rules

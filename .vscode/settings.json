@@ -1,0 +1,7 @@
+{
+	"files.associations": {
+		"energest.h": "c",
+		"button-hal.h": "c",
+		"sensors.h": "c"
+	}
+}

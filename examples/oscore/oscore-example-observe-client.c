@@ -44,6 +44,21 @@
 #include "coap-engine.h"
 #include "dev/button-sensor.h"
 
+#ifdef WITH_OSCORE
+#include "oscore.h"
+/* Key material, sender-ID and receiver-ID used for deriving an OSCORE-Security-Context. Note that Sender-ID and Receiver-ID is
+ * mirrored in the Client and Server. */
+uint8_t master_secret[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10};
+uint8_t salt[8] = {0x9e, 0x7c, 0xa9, 0x22, 0x23, 0x78, 0x63, 0x40};
+uint8_t sender_id[] = { 0x63, 0x6C, 0x69, 0x65, 0x6E, 0x74 };
+uint8_t receiver_id[] = { 0x73, 0x65, 0x72, 0x76, 0x65, 0x72 };
+#endif /* WITH_OSCORE */
+
+/* Log configuration */
+#include "coap-log.h"
+#define LOG_MODULE "client"
+#define LOG_LEVEL  LOG_LEVEL_COAP
+
 /*----------------------------------------------------------------------------*/
 #define DEBUG 0
 #if DEBUG
@@ -55,21 +70,20 @@
 #endif
 
 /*----------------------------------------------------------------------------*/
-/* FIXME: This server address is hard-coded for Cooja */
-#define SERVER_NODE(ipaddr)   uip_ip6addr(ipaddr, 0xfe80, 0, 0, 0, 0x0212, \
-                                          0x7402, 0x0002, 0x0202)
-#define REMOTE_PORT     UIP_HTONS(COAP_DEFAULT_PORT)
-/* Toggle interval in seconds */
+#define SERVER_EP "coap://[fe80::212:4b00:1ca7:7d92]"
 #define TOGGLE_INTERVAL 30
 /* The path of the resource to observe */
 #define OBS_RESOURCE_URI "test/push"
 
-/*----------------------------------------------------------------------------*/
-static uip_ipaddr_t server_ipaddr[1]; /* holds the server ip address */
-static coap_observee_t *obs;
 
 /*----------------------------------------------------------------------------*/
-PROCESS(er_example_observe_client, "Erbium Coap Observe Client Example");
+static coap_endpoint_t server_endpoint; /* holds the server ip address */
+static coap_observee_t *obs;
+
+char *service_urls[1] = {"test/push"};
+
+/*----------------------------------------------------------------------------*/
+PROCESS(er_example_observe_client, "Erbium OSCORE Observe Client Example");
 AUTOSTART_PROCESSES(&er_example_observe_client);
 
 /*----------------------------------------------------------------------------*/
@@ -124,7 +138,7 @@ toggle_observation(void)
     obs = NULL;
   } else {
     printf("Starting observation\n");
-    obs = coap_obs_request_registration(server_ipaddr, REMOTE_PORT,
+        obs = coap_obs_request_registration(&server_endpoint,
                                         OBS_RESOURCE_URI, notification_callback, NULL);
   }
 }
@@ -140,16 +154,32 @@ PROCESS_THREAD(er_example_observe_client, ev, data)
 
   static struct etimer et;
 
-  /* store server address in server_ipaddr */
-  SERVER_NODE(server_ipaddr);
+  /* parse server address in server_endpoint */
+  coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
+
   /* receives all CoAP messages */
-  coap_init_engine();
+  coap_engine_init();
+
   /* init timer and button (if available) */
   etimer_set(&et, TOGGLE_INTERVAL * CLOCK_SECOND);
-#if PLATFORM_HAS_BUTTON
-  SENSORS_ACTIVATE(button_sensor);
-  printf("Press a button to start/stop observation of remote resource\n");
-#endif
+
+  #ifdef WITH_OSCORE
+  /* Initiate the OSCORE client, this includes storage for OSCORE-Security-Contexts. */
+  oscore_init_client();
+
+  /*Derive an OSCORE-Security-Context. */
+  static oscore_ctx_t *context;
+  context = oscore_derive_ctx(master_secret, 35, NULL, 0, 10, sender_id, 6, receiver_id, 6, NULL, 0, OSCORE_DEFAULT_REPLAY_WINDOW);
+  if(!context){
+	LOG_ERR("Could not create OSCORE Security Context!\n");
+  }
+  /* Set the association between a remote URL and a security contect. When sending a message the specified context will be used to
+   * protect the message. Note that this can be done on a resource-by-resource basis. Thus any requests to .well-known/core will not
+   * be OSCORE protected.*/
+  oscore_ep_ctx_set_association(&server_endpoint, OBS_RESOURCE_URI, context);
+
+  #endif /* WITH_OSCORE */
+
   /* toggle observation every time the timer elapses or the button is pressed */
   while(1) {
     PROCESS_YIELD();
@@ -158,12 +188,6 @@ PROCESS_THREAD(er_example_observe_client, ev, data)
       toggle_observation();
       printf("\n--Done--\n");
       etimer_reset(&et);
-#if PLATFORM_HAS_BUTTON
-    } else if(ev == sensors_event && data == &button_sensor) {
-      printf("--Toggle tutton--\n");
-      toggle_observation();
-      printf("\n--Done--\n");
-#endif
     }
   }
   PROCESS_END();
