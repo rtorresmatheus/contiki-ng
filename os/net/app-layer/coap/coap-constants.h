@@ -86,6 +86,8 @@ typedef enum {
 typedef enum {
   NO_ERROR = 0,
 
+  FETCH_0_05 = 5,               /* FETCH */
+
   CREATED_2_01 = 65,            /* CREATED */
   DELETED_2_02 = 66,            /* DELETED */
   VALID_2_03 = 67,              /* NOT_MODIFIED */

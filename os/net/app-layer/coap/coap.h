@@ -133,7 +133,7 @@ typedef struct {
 
   uint16_t payload_len;
   uint8_t *payload;
-  
+
   #ifdef WITH_OSCORE
   size_t object_security_len;
   uint8_t *object_security;
@@ -297,6 +297,8 @@ int coap_set_header_location_query(coap_message_t *message, const char *query);
 /* OSCOCRE header functions. */
 int coap_get_header_object_security(coap_message_t *message, uint8_t **object_security);
 int coap_set_header_object_security(coap_message_t *message, uint8_t *object_security, size_t object_security_len);
+int coap_get_header_object_observe_security(coap_message_t *coap_pkt, int32_t *object_security);
+int coap_set_header_object_observe_security(coap_message_t *coap_pkt, int32_t object_security);
 int coap_set_oscore(coap_message_t *coap_pkt);
 #endif /* WITH_OSCORE */
 int coap_get_header_observe(coap_message_t *message, uint32_t *observe);
