@@ -75,7 +75,7 @@ res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buff
    */
   coap_set_header_content_format(response, TEXT_PLAIN);
   coap_set_header_max_age(response, res_push.periodic->period / CLOCK_SECOND);
-  coap_set_payload(response, buffer, snprintf((char *)buffer, preferred_size, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"));
+  coap_set_payload(response, buffer, snprintf((char *)buffer, preferred_size, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"));
 
   /* The coap_subscription_handler() will be called for observable resources by the REST framework. */
 }
@@ -90,7 +90,7 @@ res_periodic_handler()
   ++event_counter;
 
   /* Usually a condition is defined under with subscribers are notified, e.g., large enough delta in sensor reading. */
-  if(1 && event_counter >= 60) {
+  if(1 && event_counter >= 50) {
     /* Notify the registered observers which will trigger the res_get_handler to create the response. */
     coap_notify_observers(&res_push);
         /* Update all energest times. */

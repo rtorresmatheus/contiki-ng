@@ -68,7 +68,7 @@ static struct etimer et;
 #define NUMBER_OF_URLS 4
 /* leading and ending slashes only for demo purposes, get cropped automatically when setting the Uri-Path */
 char *service_urls[NUMBER_OF_URLS] =
-{ ".well-known/core", "/actuators/toggle", "battery/", "error/in//path" };
+{".well-known/core", "/actuators/toggle", "battery/", "error/in//path"};
 #if PLATFORM_HAS_BUTTON
 static int uri_switch = 0;
 #endif

@@ -112,6 +112,7 @@ typedef struct {
   size_t uri_path_len;
   const char *uri_path;
   int32_t observe;
+  size_t observe_len;
   uint16_t accept;
   uint8_t if_match_len;
   uint8_t if_match[COAP_ETAG_LEN];
@@ -298,7 +299,7 @@ int coap_set_header_location_query(coap_message_t *message, const char *query);
 int coap_get_header_object_security(coap_message_t *message, uint8_t **object_security);
 int coap_set_header_object_security(coap_message_t *message, uint8_t *object_security, size_t object_security_len);
 int coap_get_header_object_observe_security(coap_message_t *coap_pkt, int32_t *object_security);
-int coap_set_header_object_observe_security(coap_message_t *coap_pkt, int32_t object_security);
+int coap_set_header_object_observe_security(coap_message_t *coap_pkt, int32_t object_security, size_t object_security_len);
 int coap_set_oscore(coap_message_t *coap_pkt);
 #endif /* WITH_OSCORE */
 int coap_get_header_observe(coap_message_t *message, uint32_t *observe);

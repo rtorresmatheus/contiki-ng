@@ -248,6 +248,18 @@ oscore_decode_message(coap_message_t *coap_pkt)
 	 coap_error_message = "OSCORE option could not be parsed.";
 	 return ret;
   }
+  union union_option observe_rec;
+  observe_rec.i32 = coap_pkt->observe;
+  ret = oscore_decode_option_value(observe_rec.u8, coap_pkt->observe_len, cose);
+  if( ret != NO_ERROR){
+	 LOG_DBG_("OBSERVE option value could not be parsed.\n");
+	 coap_error_message = "OBSERVE option could not be parsed.";
+	 return ret;
+  }
+  else{
+    coap_pkt->observe = observe_rec.i32;
+  }
+
   if(coap_is_request(coap_pkt)) {
     uint8_t *key_id;
 #ifdef WITH_GROUPCOM
@@ -417,7 +429,6 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
 #endif /*WITH_GROUPCOM*/
 
   union union_option observe_union;
-  uint8_t option_observe_value_len = 0;
 #ifndef WITH_GROUPCOM
   uint8_t option_value_buffer[15]; /* When using Group-OSCORE this has to be global. */
   uint8_t content_buffer[COAP_MAX_CHUNK_SIZE + COSE_algorithm_AES_CCM_16_64_128_TAG_LEN];
@@ -480,7 +491,7 @@ oscore_prepare_message(coap_message_t *coap_pkt, uint8_t *buffer)
   }
   coap_set_header_object_security(coap_pkt, option_value_buffer, option_value_len);
   if(coap_is_option(coap_pkt, COAP_OPTION_OBSERVE)) {
-    coap_set_header_object_observe_security(coap_pkt, observe_union.i32);
+    coap_set_header_object_observe_security(coap_pkt, observe_union.i32, option_value_len);
   }
 #ifdef WITH_GROUPCOM
   int total_len = ciphertext_len + ES256_SIGNATURE_LEN;

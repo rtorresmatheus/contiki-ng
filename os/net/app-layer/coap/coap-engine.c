@@ -225,10 +225,10 @@ coap_receive(const coap_endpoint_t *src,
     LOG_DBG_COAP_STRING((const char *)message->payload, message->payload_len);
     LOG_DBG_("\n");
     LOG_DBG("  Payload length: %d\n", message->payload_len);
-   
+
 /*Server responses have NULL STR, so for client mcast check is not needed*/
   if(message->uri_path) {
-  
+
     /*The flags to check if a multicast resource is requested*/
     is_multicast = (strncmp(message->uri_path, multicast_path, strlen(multicast_path)) == 0 );
 
@@ -244,7 +244,7 @@ coap_receive(const coap_endpoint_t *src,
 	  LOG_DBG("A client receiving a response, no mcast check.\n");
   }
   /* handle requests */
-  if(message->code >= COAP_GET && message->code <= COAP_DELETE) {
+  if((message->code >= COAP_GET && message->code <= COAP_DELETE) || message->code == FETCH_0_05) {
       /* use transaction buffer for response to confirmable request */
       if((transaction = coap_new_transaction(message->mid, src))) {
   	uint32_t block_num = 0;
@@ -261,7 +261,7 @@ coap_receive(const coap_endpoint_t *src,
             coap_init_message(response, COAP_TYPE_NON, CONTENT_2_05,
                               coap_get_mid());
         }
-#ifdef WITH_OSCORE 
+#ifdef WITH_OSCORE
 	if(coap_is_option(message, COAP_OPTION_OSCORE)) {
 	  coap_set_oscore(response);
 	  if(message->security_context == NULL) {
@@ -374,7 +374,7 @@ coap_receive(const coap_endpoint_t *src,
 			return 0;
 		}
 #else
-            if((transaction->message_len = 
+            if((transaction->message_len =
 		   coap_serialize_message(response, transaction->message)) == 0) {
               coap_status_code = PACKET_SERIALIZATION_ERROR;
             }
@@ -432,22 +432,22 @@ coap_receive(const coap_endpoint_t *src,
 #ifdef WITH_GROUPCOM
       if(is_mcast) {
         /*Copy transport data to a timer data. The response will be sent at timer expiration.*/
-#if COAP_GROUPCOM_DELAY == 0 
-      uint16_t delay_time = 1; //TEMP small delay maybe 0 ticks wont work 
+#if COAP_GROUPCOM_DELAY == 0
+      uint16_t delay_time = 1; //TEMP small delay maybe 0 ticks wont work
 #elif COAP_GROUPCOM_DELAY != 0
-      uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY_MILLIS * CLOCK_SECOND)); 
+      uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY_MILLIS * CLOCK_SECOND));
 #endif /* COAP_GROUPCOM_DELAY */
 	 LOG_DBG("Scheduling delayed response after %d ticks...\n", delay_time);
         dr_mid = message->mid;
 	ctimer_set(&dr_timer, delay_time, send_delayed_response_callback, &dr_mid);
       } else {
-        LOG_DBG("No groupcom, running coap_send_transation...\n");    
+        LOG_DBG("No groupcom, running coap_send_transation...\n");
         coap_send_transaction(transaction);
       }
 #else   /* No WITH_GROUPCOM */
 	coap_send_transaction(transaction);
 #endif /*WITH_GROUPCOM*/
-        
+
           }
   } else if(coap_status_code == MANUAL_RESPONSE) {
     LOG_DBG("Clearing transaction for manual response");
@@ -455,11 +455,11 @@ coap_receive(const coap_endpoint_t *src,
   } else if(coap_status_code == OSCORE_DECRYPTION_ERROR) {
     LOG_WARN("OSCORE response decryption failed!\n");
     coap_transaction_t *t = coap_get_transaction_by_mid(message->mid);
-    
+
     /* free transaction memory before callback, as it may create a new transaction */
     coap_resource_response_handler_t callback = t->callback;
     void *callback_data = t->callback_data;
-    
+
     message->code = OSCORE_DECRYPTION_ERROR;
     coap_clear_transaction(t);
     LOG_DBG("TODO send empty ACK!\n");
@@ -467,7 +467,7 @@ coap_receive(const coap_endpoint_t *src,
     if(callback) {
       callback(callback_data, message);
     }
-    
+
     return coap_status_code;
   } else {
     coap_message_type_t reply_type = COAP_TYPE_ACK;
@@ -514,10 +514,10 @@ void
 coap_send_postcrypto(coap_message_t *message, coap_message_t *response)
 {
       size_t msg_len = 0;
-#if COAP_GROUPCOM_DELAY == 0 
-      uint16_t delay_time = 1; 
-#elif COAP_GROUPCOM_DELAY != 0 
-      uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY * CLOCK_SECOND)); 
+#if COAP_GROUPCOM_DELAY == 0
+      uint16_t delay_time = 1;
+#elif COAP_GROUPCOM_DELAY != 0
+      uint16_t delay_time = (random_rand() % (COAP_GROUPCOM_DELAY * CLOCK_SECOND));
 #endif /* COAP_GROUPCOM_DELAY */
 
       coap_transaction_t *transaction = NULL;

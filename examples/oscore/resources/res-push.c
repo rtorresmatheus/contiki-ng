@@ -40,6 +40,7 @@
 #include <string.h>
 #include "coap-engine.h"
 #include "coap.h"
+#include "sys/energest.h"
 
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_periodic_handler(void);
@@ -50,13 +51,19 @@ PERIODIC_RESOURCE(res_push,
                   NULL,
                   NULL,
                   NULL,
-                  5000,
+                  1000,
                   res_periodic_handler);
 
 /*
  * Use local resource state that is accessed by res_get_handler() and altered by res_periodic_handler() or PUT or POST.
  */
 static int32_t event_counter = 0;
+
+static unsigned long
+to_seconds(uint64_t time)
+{
+  return (unsigned long)(time / ENERGEST_SECOND);
+}
 
 static void
 res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
@@ -68,7 +75,7 @@ res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buff
    */
   coap_set_header_content_format(response, TEXT_PLAIN);
   coap_set_header_max_age(response, res_push.periodic->period / CLOCK_SECOND);
-  coap_set_payload(response, buffer, snprintf((char *)buffer, preferred_size, "VERY LONG EVENT %lu", (unsigned long) event_counter));
+  coap_set_payload(response, buffer, snprintf((char *)buffer, preferred_size, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"));
 
   /* The coap_subscription_handler() will be called for observable resources by the REST framework. */
 }
@@ -83,8 +90,25 @@ res_periodic_handler()
   ++event_counter;
 
   /* Usually a condition is defined under with subscribers are notified, e.g., large enough delta in sensor reading. */
-  if(1) {
+  if(1 && event_counter >= 50) {
     /* Notify the registered observers which will trigger the res_get_handler to create the response. */
     coap_notify_observers(&res_push);
+        /* Update all energest times. */
+    energest_flush();
+
+    printf("\nEnergest SERVER:\n");
+    printf(" CPU          %4lus LPM      %4lus DEEP LPM %4lus  Total time %lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_CPU)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_LPM)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_DEEP_LPM)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()));
+    printf(" Radio LISTEN %4lus TRANSMIT %4lus OFF      %4lus\n",
+           to_seconds(energest_type_time(ENERGEST_TYPE_LISTEN)),
+           to_seconds(energest_type_time(ENERGEST_TYPE_TRANSMIT)),
+           to_seconds(ENERGEST_GET_TOTAL_TIME()
+                      - energest_type_time(ENERGEST_TYPE_TRANSMIT)
+                      - energest_type_time(ENERGEST_TYPE_LISTEN)));
   }
+
+
 }

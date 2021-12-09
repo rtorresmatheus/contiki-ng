@@ -56,7 +56,7 @@
 
 /*----------------------------------------------------------------------------*/
 /* TODO: Change with your server adress */
-#define SERVER_EP "coap://[fe80::212:4b00:1ca7:7ab9]"
+#define SERVER_EP "coap://[fe80::212:4b00:1ca7:7d92]"
 /* Toggle interval in seconds */
 #define TOGGLE_INTERVAL 180
 /* The path of the resource to observe */
@@ -86,6 +86,10 @@ notification_callback(coap_observee_t *obs, void *notification,
 {
   int len = 0;
   const uint8_t *payload = NULL;
+  energest_init();
+  energest_on(ENERGEST_TYPE_TRANSMIT);
+  energest_on(ENERGEST_TYPE_LISTEN);
+  energest_off(ENERGEST_TYPE_CPU);
 
   printf("Notification handler\n");
   printf("Observee URI: %s\n", obs->url);

@@ -1675,11 +1675,12 @@ int coap_set_header_object_security(coap_message_t *coap_pkt, uint8_t *object_se
 
 int coap_get_header_object_observe_security(coap_message_t *coap_pkt, int32_t *object_security)
 {
-  return coap_get_header_observe(coap_pkt, object_security);
+  return coap_get_header_observe(coap_pkt, (uint32_t *) object_security);
 }
 
-int coap_set_header_object_observe_security(coap_message_t *coap_pkt, int32_t object_security)
+int coap_set_header_object_observe_security(coap_message_t *coap_pkt, int32_t object_security, size_t object_security_len)
 {
+  coap_pkt->observe_len = object_security_len;
   return coap_set_header_observe(coap_pkt, object_security);
 }
 

@@ -6,7 +6,9 @@ CONTIKI=../..
 
 MAKE_WITH_OSCORE = 1
 WERROR = 1
+MODULES_REL += ./resources
 MODULES += os/services/shell
+MODULES += os/services/simple-energest
 #CFLAGS += -Wvla
 
 # build RESTful resources
